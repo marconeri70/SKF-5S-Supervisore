@@ -2,39 +2,30 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>SKF 5S — Note</title>
   <link rel="icon" href="assets/skf-192.png">
-  <link rel="stylesheet" href="style.css?=2.3.14">
+  <link rel="stylesheet" href="style.css?v=2315">
 </head>
 <body data-page="notes">
 <header class="appbar">
-  <div class="brand">
-    <a class="btn back" href="index.html">Indietro</a>
-    <img src="assets/skf-logo.png" alt="SKF" class="brand-logo">
-    <span class="brand-title">SKF 5S</span>
-    <span class="brand-badge">Note</span>
-  </div>
-  <nav class="actions scrollable-actions">
-    <select id="f-type" class="btn small outline dark">
-      <option value="all">Tutti</option>
-      <option value="Rettifica">Rettifica</option>
-      <option value="MONTAGGIO">Montaggio</option>
-    </select>
-    <input id="f-from" class="btn small outline dark" type="date">
-    <input id="f-to"   class="btn small outline dark" type="date">
-    <input id="f-ch"   class="btn small outline dark" type="search" placeholder="Cerca CH… es. 24">
-    <button id="f-apply"  class="btn outline dark">Filtra</button>
-    <button id="f-clear"  class="btn outline dark">Pulisci</button>
+  <a href="index.html?v=2315" class="btn back">Supervisor</a>
+  <div class="brand"><img src="assets/skf-logo.png" class="brand-logo"><span class="brand-title">SKF 5S</span><span class="brand-badge">Note</span></div>
+  <nav class="actions" id="note-filters">
+    <select id="f-type"><option value="all">Tutti</option><option>Rettifica</option><option>MONTAGGIO</option></select>
+    <input id="f-from" type="date"><input id="f-to" type="date">
+    <input id="f-ch" placeholder="Cerca CH... es. 24">
+    <button id="f-apply" class="btn outline">Filtra</button>
+    <button id="f-clear" class="btn">Pulisci</button>
   </nav>
 </header>
 
 <main class="container">
   <h2>Note importate <span id="notes-count"></span></h2>
-  <div id="notes-list" class="note-blocks"></div>
+  <div id="notes-list"></div>
 </main>
 
-<footer class="safe-bottom"><div class="version">v2.3.14</div></footer>
-<script src="app.js?v=2.3.14" defer></script>
+<footer class="safe-bottom"><a href="index.html?v=2315" class="btn outline">← Torna alla Home</a><div class="version">v2.3.15</div></footer>
+<script src="app.js?v=2315" defer></script>
 </body>
 </html>
