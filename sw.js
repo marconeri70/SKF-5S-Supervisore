@@ -1,5 +1,5 @@
 // sw.js — v2.3.14-safe
-const VERSION = 'v2314';
+const VERSION = 'v2.3.14';
 
 // niente cache aggressiva: sempre rete; se offline, prova da cache.
 self.addEventListener('install', (e) => self.skipWaiting());
