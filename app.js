@@ -1,9 +1,4 @@
-// SKF 5S Supervisor — build 2.3.12-full
-// Base: tua versione stabile (main 2) + FIX NOTE (supporto oggetto/array) + nessun cambiamento grafico extra.
-
-// ===================================
-// Utility DOM
-// ===================================
+// SKF 5S Supervisor — v2.3.16 (Home con grafici a torta orizzontali)
 (() => {
   const STORAGE_KEY = 'skf5s:supervisor:data';
   const PIN_KEY     = 'skf5s:pin';
@@ -11,9 +6,6 @@
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-  // ===================================
-  // Storage
-  // ===================================
   const store = {
     load(){
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
@@ -22,95 +14,10 @@
     save(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
   };
 
-  // ===================================
-  // Helpers
-  // ===================================
+  // ---------- utils
   const fmtPercent = v => `${Math.round(Number(v)||0)}%`;
-  const mean = p => Math.round(((+p.s1||0)+(+p.s2||0)+(+p.s3||0)+(+p.s4||0)+(+p.s5||0))/5);
 
-  // ===================================
-  // NOTE: parser robusto
-  // - notes array: [{s|S|type, text|note, date?}, ...]
-  // - notes oggetto: {s1:"riga1\nriga2", s2:"...", ...} o {s1:[...]}
-  // - fallback: se il file avesse S1..S5 come array di stringhe fuori da "notes"
-  // ===================================
-  function parseNotesFlexible(src, fallbackDate){
-    const out = [];
-    if (!src) return out;
-
-    // Caso A: array
-    if (Array.isArray(src)){
-      for (const n of src){
-        if (!n) continue;
-        out.push({
-          s:    n.s || n.S || n.type || '',
-          text: n.text || n.note || '',
-          date: n.date || fallbackDate
-        });
-      }
-      return out;
-    }
-
-    // Caso B: oggetto {s1:"...", s2:"..."} con \n o array
-    if (typeof src === 'object'){
-      for (const k of Object.keys(src)){
-        const val = src[k];
-        if (typeof val === 'string' && val.trim()){
-          for (const line of val.split(/\n+/)){
-            const t = line.trim();
-            if (t) out.push({ s:k, text:t, date:fallbackDate });
-          }
-        } else if (Array.isArray(val)){
-          for (const line of val){
-            const t = String(line||'').trim();
-            if (t) out.push({ s:k, text:t, date:fallbackDate });
-          }
-        }
-      }
-      return out;
-    }
-
-    return out;
-  }
-
-  // ===================================
-  // Record parser flessibile (non cambia i tuoi campi)
-  // ===================================
-  function parseRec(obj){
-    const rec = {
-      area:    obj.area || '',
-      channel: obj.channel || obj.CH || obj.ch || '',
-      date:    obj.date || obj.timestamp || new Date().toISOString(),
-      points:  obj.points || obj.kpi || {},
-      notes:   []
-    };
-    rec.points = {
-      s1: Number(rec.points.s1 || rec.points.S1 || rec.points['1S'] || 0),
-      s2: Number(rec.points.s2 || rec.points.S2 || rec.points['2S'] || 0),
-      s3: Number(rec.points.s3 || rec.points.S3 || rec.points['3S'] || 0),
-      s4: Number(rec.points.s4 || rec.points.S4 || rec.points['4S'] || 0),
-      s5: Number(rec.points.s5 || rec.points.S5 || rec.points['5S'] || 0)
-    };
-
-    // NOTE: unica modifica reale rispetto alla base — parser robusto
-    rec.notes = parseNotesFlexible(obj.notes, rec.date);
-
-    // Supporto extra: eventuali S1..S5 come array direttamente su root
-    for (const k of Object.keys(obj||{})){
-      if (/^S[1-5]$/i.test(k) && Array.isArray(obj[k])){
-        for (const line of obj[k]){
-          const t = String(line||'').trim();
-          if (t) rec.notes.push({ s:k, text:t, date:rec.date });
-        }
-      }
-    }
-
-    return rec;
-  }
-
-  // ===================================
-  // Import multiplo (invariato nei comportamenti)
-  // ===================================
+  // ---------- import multiplo (invariato)
   async function handleImport(files){
     if (!files || !files.length) return;
     const current = store.load();
@@ -128,15 +35,29 @@
         alert('Errore file: ' + f.name);
       }
     }
-
     const merged = Array.from(byKey.values()).sort((a,b)=> new Date(a.date)-new Date(b.date));
     store.save(merged);
-    render(); // aggiorna tutte le viste
+    renderHome(); // refresh
   }
 
-  // ===================================
-  // Export con PIN (uguale alla tua logica)
-  // ===================================
+  function parseRec(obj){
+    const rec = {
+      area:    obj.area || '',
+      channel: obj.channel || obj.CH || obj.ch || '',
+      date:    obj.date || obj.timestamp || new Date().toISOString(),
+      points:  obj.points || obj.kpi || {},
+      notes:   obj.notes || []
+    };
+    rec.points = {
+      s1: Number(rec.points.s1 || rec.points.S1 || rec.points['1S'] || 0),
+      s2: Number(rec.points.s2 || rec.points.S2 || rec.points['2S'] || 0),
+      s3: Number(rec.points.s3 || rec.points.S3 || rec.points['3S'] || 0),
+      s4: Number(rec.points.s4 || rec.points.S4 || rec.points['4S'] || 0),
+      s5: Number(rec.points.s5 || rec.points.S5 || rec.points['5S'] || 0)
+    };
+    return rec;
+  }
+
   function exportAll(){
     const pinSaved = localStorage.getItem(PIN_KEY);
     const ask = prompt('Inserisci PIN (demo 1234):', '');
@@ -150,19 +71,14 @@
     a.click();
   }
 
-  // ===================================
-  // PIN / Lucchetto (rispetta la tua UI)
-  // ===================================
   function initLock(){
     const btn = $('#btn-lock'); if (!btn) return;
-
     const paint = () => {
       const pin = localStorage.getItem(PIN_KEY);
       btn.textContent = pin ? '🔓' : '🔒';
       btn.title = pin ? 'PIN impostato — clic per cambiare' : 'Imposta PIN';
     };
     paint();
-
     btn.onclick = () => {
       const old = localStorage.getItem(PIN_KEY);
       if (old){
@@ -181,21 +97,73 @@
     };
   }
 
-  // ===================================
-  // HOME — grafici orizzontali + filtro tipo (come tua base)
-  // Richiede in index.html:
-  //  - .segmented .seg[data-type] con class .on per attivo
-  //  - #board-all come contenitore delle card dei CH
-  //  - #chip-strip per i pulsanti CH
-  // ===================================
-  function renderHome(){
-    const wrap = $('#board-all'); if (!wrap) return;
-    const data = store.load();
+  // ---------- pie SVG (donut)
+  function pieSvg(values, colors, size=220, inner=90){
+    const total = values.reduce((a,b)=>a+Math.max(0,b),0) || 1;
+    const cx = size/2, cy=size/2, r=size/2;
+    let cur = -Math.PI/2;
+    const segs = [];
+    values.forEach((v,i)=>{
+      const ang = (v/total)*Math.PI*2;
+      const x1 = cx + r*Math.cos(cur);
+      const y1 = cy + r*Math.sin(cur);
+      const x2 = cx + r*Math.cos(cur+ang);
+      const y2 = cy + r*Math.sin(cur+ang);
+      const large = ang > Math.PI ? 1 : 0;
+      const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+      segs.push(`<path d="${d}" fill="${colors[i]}" />`);
+      cur += ang;
+    });
+    const hole = `<circle cx="${cx}" cy="${cy}" r="${inner}" fill="#fff"/>`;
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true">${segs.join('')}${hole}</svg>`;
+  }
 
+  // ---------- sezione ritardi (link alle note con evidenziazione gestita in notes.html già esistente)
+  function renderDelays(){
+    const box = $('#delay-section'); if (!box) return;
+    const list = $('#delay-list');
+    const data = store.load();
+    const today = Date.now();
+    const delayed = [];
+
+    const byCh = new Map();
+    for (const r of data){
+      const k = r.channel || 'CH?';
+      (byCh.get(k) || byCh.set(k, []).get(k)).push(r);
+    }
+    for (const [ch, arr] of byCh){
+      const last = arr.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
+      const days = Math.floor((today - new Date(last.date).getTime())/86400000);
+      if (days > 7) delayed.push({ch, area:last.area||'', days, last:last.date});
+    }
+
+    if (!delayed.length){ box.hidden = true; return; }
+    box.hidden = false;
+    list.innerHTML = '';
+    for (const d of delayed.sort((a,b)=> b.days-a.days)){
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${d.ch}</strong> — <span class="chip">${d.area||''}</span> — <span class="muted">${d.days} giorni di ritardo</span>
+        <button class="btn tiny outline" data-go="notes" data-ch="${encodeURIComponent(d.ch)}" data-date="${d.last}">Vedi note</button>`;
+      list.appendChild(li);
+    }
+    list.querySelectorAll('button[data-go="notes"]').forEach(b=>{
+      b.addEventListener('click', () => {
+        const params = new URLSearchParams({ hlCh: b.dataset.ch, hlDate: b.dataset.date });
+        location.href = `notes.html?${params.toString()}`;
+      });
+    });
+  }
+
+  // ---------- home a torta orizzontale
+  function renderHome(){
+    renderDelays();
+
+    const wrap = $('#pie-strip'); if (!wrap) return;
+    const data = store.load();
     const activeType = $('.segmented .seg.on')?.dataset.type || 'all';
     const filt = (r) => activeType==='all' ? true : (r.area===activeType);
 
-    // group per CH, prendi ultimo record
+    // ultima misura per CH
     const byCh = new Map();
     for (const r of data.filter(filt)){
       const k = r.channel || 'CH?';
@@ -203,420 +171,56 @@
     }
 
     wrap.innerHTML = '';
-    const chips = $('#chip-strip'); if (chips) chips.innerHTML = '';
+    const cs = getComputedStyle(document.documentElement);
+    const colors = [
+      cs.getPropertyValue('--s1').trim()||'#6c63ff',
+      cs.getPropertyValue('--s2').trim()||'#ff5a5a',
+      cs.getPropertyValue('--s3').trim()||'#f6b93b',
+      cs.getPropertyValue('--s4').trim()||'#27ae60',
+      cs.getPropertyValue('--s5').trim()||'#2e86de'
+    ];
 
     for (const [ch, arr] of Array.from(byCh.entries()).sort()){
       const last = arr.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
       const p = last?.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
-
       const card = document.createElement('div');
-      card.className = 'board';
+      card.className = 'piecard';
       card.innerHTML = `
-        <h4>${ch} <small class="muted">${last?.area||''}</small></h4>
-        <div class="hbars">
-          <div class="hbar"><i class="l1" style="width:${p.s1}%"></i><span class="pct">1S ${fmtPercent(p.s1)}</span></div>
-          <div class="hbar"><i class="l2" style="width:${p.s2}%"></i><span class="pct">2S ${fmtPercent(p.s2)}</span></div>
-          <div class="hbar"><i class="l3" style="width:${p.s3}%"></i><span class="pct">3S ${fmtPercent(p.s3)}</span></div>
-          <div class="hbar"><i class="l4" style="width:${p.s4}%"></i><span class="pct">4S ${fmtPercent(p.s4)}</span></div>
-          <div class="hbar"><i class="l5" style="width:${p.s5}%"></i><span class="pct">5S ${fmtPercent(p.s5)}</span></div>
-        </div>`;
+        <h4><span>${ch}</span><span class="muted">${last?.area||''}</span></h4>
+        <div class="piewrap">${pieSvg([p.s1,p.s2,p.s3,p.s4,p.s5], colors, 220, 90)}</div>
+        <div class="pielegend">
+          <span class="dot s1"></span><span>1S</span><span>${fmtPercent(p.s1)}</span>
+          <span class="dot s2"></span><span>2S</span><span>${fmtPercent(p.s2)}</span>
+          <span class="dot s3"></span><span>3S</span><span>${fmtPercent(p.s3)}</span>
+          <span class="dot s4"></span><span>4S</span><span>${fmtPercent(p.s4)}</span>
+          <span class="dot s5"></span><span>5S</span><span>${fmtPercent(p.s5)}</span>
+        </div>
+        <button class="btn big" style="margin-top:6px" onclick="location.href='checklist.html#${encodeURIComponent(ch)}'">Apri scheda</button>
+      `;
       wrap.appendChild(card);
-
-      const chip = document.createElement('button');
-      chip.className = 'chip';
-      chip.textContent = ch;
-      chip.onclick = () => location.href = 'checklist.html#' + encodeURIComponent(ch);
-      chips?.appendChild(chip);
     }
 
-    // toggle tipo
+    // switch filtro
     $$('.segmented .seg').forEach(b=>{
       b.onclick = () => { $$('.segmented .seg').forEach(x=>x.classList.remove('on')); b.classList.add('on'); renderHome(); };
     });
   }
-  
-// ===================================
-// HOME — controllo CH in ritardo
-// ===================================
-// ===================================
-// HOME — controllo CH in ritardo (con link alle note evidenziate)
-// ===================================
-function renderDelays() {
-  const delaySec  = document.getElementById('delay-section');
-  const delayList = document.getElementById('delay-list');
-  if (!delaySec || !delayList) return;
 
-  const data = store.load();
-  if (!data.length) { delaySec.hidden = true; return; }
-
-  const today   = new Date();
-  const maxDays = 7; // soglia
-
-  // mappa CH -> ultimo record
-  const lastByCh = new Map();
-  for (const r of data) {
-    const ch = r.channel || 'CH?';
-    const d  = new Date(r.date);
-    if (!lastByCh.has(ch) || d > new Date(lastByCh.get(ch).date)) {
-      lastByCh.set(ch, r);
-    }
-  }
-
-  const delayed = [];
-  for (const [ch, rec] of lastByCh.entries()) {
-    const d = new Date(rec.date);
-    const diff = Math.floor((today - d) / 86400000);
-    if (diff > maxDays) {
-      delayed.push({
-        ch,
-        area: rec.area || '',
-        days: diff,
-        date: d.toISOString().split('T')[0],         // solo yyyy-mm-dd
-        iso:  rec.date                                // ISO completo per match
-      });
-    }
-  }
-
-  if (!delayed.length) { delaySec.hidden = true; return; }
-
-  delaySec.hidden = false;
-  delayList.innerHTML = delayed
-    .sort((a,b)=> b.days - a.days)
-    .map(d => `
-      <li class="delay-item">
-        <strong>${d.ch}</strong>
-        <span class="muted">— ${d.days} giorni di ritardo</span>
-        <span class="small">(ultimo aggiornamento: ${d.date}${d.area ? ` • ${d.area}` : ''})</span>
-        <button class="btn tiny outline"
-          onclick="location.href='notes.html?hlCh=${encodeURIComponent(d.ch)}&hlDate=${encodeURIComponent(d.iso)}'">
-          Vedi note
-        </button>
-      </li>
-    `)
-    .join('');
-}
-
-  // ===================================
-  // CHECKLIST — card + comprimi/espandi + stampa singola
-  // Richiede in checklist.html:
-  //  - #cards
-  //  - #btn-toggle-all (opzionale)
-  //  - .btn-print su ogni card
-  // ===================================
-  function printCard(card){
-    const w = window.open('', '_blank');
-    w.document.write(`<title>Stampa CH</title><style>
-      body{font-family:Arial,sans-serif;margin:20px}
-      .pill{display:inline-block;margin-right:6px;padding:4px 8px;border-radius:12px;color:#fff;font-weight:bold}
-      .s1{background:${getComputedStyle(document.documentElement).getPropertyValue('--s1')}}
-      .s2{background:${getComputedStyle(document.documentElement).getPropertyValue('--s2')}}
-      .s3{background:${getComputedStyle(document.documentElement).getPropertyValue('--s3')}}
-      .s4{background:${getComputedStyle(document.documentElement).getPropertyValue('--s4')}}
-      .s5{background:${getComputedStyle(document.documentElement).getPropertyValue('--s5')}}
-      .bar{height:14px;border-radius:7px;background:#eee;margin:10px 0;position:relative}
-      .bar i{position:absolute;left:0;top:0;height:100%;border-radius:7px}
-    </style>`);
-    w.document.write(card.innerHTML.replaceAll('hbars','').replaceAll('hbar','bar'));
-    w.document.close(); w.focus(); w.print(); setTimeout(()=>w.close(),100);
-  }
-
-function renderChecklist(){
-  const wrap = $('#cards'); 
-  if (!wrap) return;
-
-  const data = store.load();
-  wrap.innerHTML = '';
-
-  // hash facoltativo per aprire direttamente un CH (es. checklist.html#CH%2011)
-  const hash = decodeURIComponent(location.hash.slice(1) || '');
-  afterChecklistRender();
-
-  // group per CH
-  const byCh = new Map();
-  for (const r of data){
-    const key = r.channel || 'CH ?';
-    (byCh.get(key) || byCh.set(key, []).get(key)).push(r);
-  }
-
-  // --- fallback: inietta il bottone "Comprimi/Espandi" accanto a "Stampa PDF"
-//     anche se la card è stata creata con il vecchio markup
-function injectPerCardToggle(){
-  $$('.card-line').forEach(card => {
-    const printBtn = card.querySelector('.btn-print');
-    if (!printBtn) return;
-
-    // se il toggle non c'è ancora, lo aggiungo subito dopo il bottone stampa
-    if (!card.querySelector('.btn-toggle')) {
-      const toggle = document.createElement('button');
-      toggle.className = 'btn ghost btn-toggle';
-      toggle.textContent = card.classList.contains('compact') ? 'Espandi' : 'Comprimi';
-      printBtn.insertAdjacentElement('afterend', toggle);
-
-      toggle.addEventListener('click', () => {
-        const isCompact = card.classList.toggle('compact');
-        toggle.textContent = isCompact ? 'Espandi' : 'Comprimi';
-      });
-    }
-  });
-}
-
-// richiama il fallback ogni volta che renderizzi le card
-function afterChecklistRender(){
-  injectPerCardToggle();
-}
-
-  // ordina per nome CH
-  for (const [ch, arr] of Array.from(byCh.entries()).sort()){
-    if (hash && ch !== hash) continue;
-
-    // ultimo record per CH
-    const last = arr.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
-    const p = last?.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
-
-    // ✨ etichetta senza doppio "CH"
-    const label = 'CH ' + String(ch).replace(/^CH\s*/i,'').trim();
-
-    // card
-    const card = document.createElement('article');
-    card.className = 'card-line';
-    card.id = `CH-${CSS.escape(ch)}`;
-    card.innerHTML = `
-      <div class="top">
-        <div>
-          <div style="font-weight:800">${label}</div>
-          <div class="muted" style="font-size:.9rem">${last?.area||''} • Ultimo: ${last?.date||'-'}</div>
-        </div>
-
-        <div class="pills">
-          <span class="pill s1">S1 ${fmtPercent(p.s1)}</span>
-          <span class="pill s2">S2 ${fmtPercent(p.s2)}</span>
-          <span class="pill s3">S3 ${fmtPercent(p.s3)}</span>
-          <span class="pill s4">S4 ${fmtPercent(p.s4)}</span>
-          <span class="pill s5">S5 ${fmtPercent(p.s5)}</span>
-          <span class="pill" style="background:#eef5ff;color:#0b3b8f">Voto medio ${fmtPercent(mean(p))}</span>
-        </div>
-
-        <div class="btns">
-          <button class="btn outline btn-print">Stampa PDF</button>
-          <button class="btn ghost btn-toggle">Comprimi</button>
-        </div>
-      </div>
-
-      <div class="bars">
-        <div class="bar"><i class="l1" style="width:${p.s1}%"></i></div>
-        <div class="bar"><i class="l2" style="width:${p.s2}%"></i></div>
-        <div class="bar"><i class="l3" style="width:${p.s3}%"></i></div>
-        <div class="bar"><i class="l4" style="width:${p.s4}%"></i></div>
-        <div class="bar"><i class="l5" style="width:${p.s5}%"></i></div>
-      </div>
-    `;
-    wrap.appendChild(card);
-
-    // stampa solo questa card
-    card.querySelector('.btn-print').onclick = () => printCard(card);
-
-    // 🆕 toggle solo questa card
-    const btnToggle = card.querySelector('.btn-toggle');
-    btnToggle.addEventListener('click', () => {
-      const isCompact = card.classList.toggle('compact');
-      btnToggle.textContent = isCompact ? 'Espandi' : 'Comprimi';
-    });
-  }
-
-  // toggle globale già esistente (se presente in pagina)
-  const btnAll = $('#btn-toggle-all');
-  if (btnAll){
-    let compactAll = false;
-    btnAll.onclick = () => {
-      compactAll = !compactAll;
-      $$('.card-line').forEach(c => c.classList.toggle('compact', compactAll));
-      // aggiorna tutti i bottoni locali coerentemente
-      $$('.card-line .btn-toggle').forEach(b => b.textContent = compactAll ? 'Espandi' : 'Comprimi');
-    };
-  }
-
-  // stampa tutti (se presente)
-  $('#btn-print-all')?.addEventListener('click', () => window.print());
-}
-
-// ===================================
-// NOTE — elenco + filtri + evidenziazione da link (hlCh, hlDate)
-// ===================================
-function renderNotes(){
-  const box = $('#notes-list'); 
-  if (!box) return;
-
-  // --- prepara righe note piatte
-  const rows = [];
-  for (const r of store.load()){
-    const arr = Array.isArray(r.notes) ? r.notes : [];
-    for (const n of arr){
-      rows.push({
-        ch:   r.channel,
-        area: r.area,
-        // normalizza S
-        s:    (n.s || '').toString().toUpperCase(),
-        text: n.text || '',
-        date: n.date || r.date
-      });
-    }
-  }
-
-  // --- filtri UI
-  const typeVal = $('#f-type')?.value || 'all';
-  const fromVal = $('#f-from')?.value || '';
-  const toVal   = $('#f-to')?.value   || '';
-  const chVal   = ($('#f-ch')?.value  || '').trim().toLowerCase();
-
-  const inRange = d => {
-    const t = new Date(d).getTime();
-    if (fromVal && t < new Date(fromVal).getTime()) return false;
-    if (toVal   && t > new Date(toVal).getTime() + 86400000 - 1) return false;
-    return true;
-  };
-
-  const filtered = rows
-    .filter(r => typeVal==='all' ? true : r.area===typeVal)
-    .filter(r => !chVal || (''+r.ch).toLowerCase().includes(chVal))
-    .filter(r => inRange(r.date))
-    .sort((a,b)=> new Date(b.date) - new Date(a.date));
-
-  // --- raggruppa per CH + data (giorno) + area
-  const groups = new Map();
-  for (const r of filtered){
-    const day = new Date(r.date).toISOString(); // ISO completo per match esatto
-    const key = `${r.ch}|${day}|${r.area||''}`;
-    const g = groups.get(key) || { ch:r.ch, area:r.area, dateISO:day, items:[] };
-    g.items.push(r);
-    groups.set(key, g);
-  }
-
-  // --- pulisci / aggiorna contatori
-  box.innerHTML = '';
-  $('#notes-count')   && ($('#notes-count').textContent   = `(${filtered.length})`);
-  $('#notes-counter') && ($('#notes-counter').textContent = `${filtered.length} note`);
-
-  if (!filtered.length){
-    box.innerHTML = '<div class="muted">Nessuna nota con i filtri selezionati.</div>';
-    return;
-  }
-
-  // --- crea blocchi
-  for (const g of groups.values()){
-    const id = `note-${encodeURIComponent(g.ch)}-${encodeURIComponent(g.dateISO)}`;
-    const wrap = document.createElement('section');
-    wrap.className = 'note-block';
-    wrap.id = id;
-    wrap.dataset.ch   = g.ch;
-    wrap.dataset.date = g.dateISO;
-
-    // intestazione
-    const when = new Date(g.dateISO).toISOString().replace('T', ' ').replace('Z','Z');
-    wrap.innerHTML = `
-      <header class="note-head">
-        <div><strong>${g.ch}</strong> ${g.area ? `• <span class="chip">${g.area}</span>` : ''}</div>
-        <div class="muted small">${when}</div>
-      </header>
-      <div class="note-body"></div>
-    `;
-
-    const body = wrap.querySelector('.note-body');
-
-    // raggruppa per S all'interno del blocco
-    const byS = new Map();
-    for (const it of g.items){
-      const s = it.s && /S[1-5]/i.test(it.s) ? it.s.toUpperCase() : 'S1';
-      (byS.get(s) || byS.set(s, []).get(s)).push(it.text);
-    }
-
-    for (const [s, texts] of byS){
-      const col = document.createElement('div');
-      col.className = 'note-col';
-      col.innerHTML = `<div class="pill ${s.toLowerCase()}">${s}</div>`;
-      const ul = document.createElement('ul');
-      ul.className = 'note-ul';
-      for (const t of texts){
-        const li = document.createElement('li');
-        li.textContent = t;
-        ul.appendChild(li);
-      }
-      col.appendChild(ul);
-      body.appendChild(col);
-    }
-
-    box.appendChild(wrap);
-  }
-
-  // --- evidenziazione da query (hlCh & hlDate)
-  const sp   = new URLSearchParams(location.search);
-  const hlCh = sp.get('hlCh');
-  const hlDt = sp.get('hlDate'); // ISO dell'ultimo aggiornamento
-  if (hlCh && hlDt){
-    const targetId = `note-${encodeURIComponent(hlCh)}-${encodeURIComponent(hlDt)}`;
-    const target = document.getElementById(targetId);
-    if (target){
-      target.classList.add('note-hl');
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-}
-
-  // ===================================
-  // Bind comuni (rispetta la tua UI/ID)
-  // ===================================
+  // ---------- bind comuni
   function initCommon(){
-    // Import multiplo
     $('#btn-import')?.addEventListener('click', () => $('#import-input')?.click());
     $('#import-input')?.addEventListener('change', (e) => handleImport(e.target.files));
-
-    // Export (PIN)
     $('#btn-export')?.addEventListener('click', exportAll);
     $('#btn-export-supervisor')?.addEventListener('click', exportAll);
-
-    // Note
-// Note: se siamo in home -> vai su notes.html; se già su notes -> ricalcola elenco
-$('#btn-notes')?.addEventListener('click', (e) => {
-  const page = document.body.getAttribute('data-page'); // "home" | "notes" | "checklist" ...
-  if (page !== 'notes') {
-    e?.preventDefault?.();
-    location.href = 'notes.html';
-  } else {
-    renderNotes(); // già nella pagina note: aggiorna subito la lista
-  }
-});
-
-    // Filtri note
-    $('#f-apply')?.addEventListener('click', renderNotes);
-    $('#f-clear')?.addEventListener('click', () => {
-      if ($('#f-type')) $('#f-type').value = 'all';
-      if ($('#f-from')) $('#f-from').value = '';
-      if ($('#f-to'))   $('#f-to').value   = '';
-      if ($('#f-ch'))   $('#f-ch').value   = '';
-      renderNotes();
-    });
   }
 
-  // ===================================
-  // Render dispatcher
-  // ===================================
-  function render(){
-    renderHome();
-    renderChecklist();
-    renderNotes();
-  }
-
-  // ===================================
-  // Boot
-  // ===================================
+  // ---------- boot
   window.addEventListener('DOMContentLoaded', () => {
     initCommon();
     initLock();
-    render();
-    renderDelays();
-
-    // Registrazione SW: usa il tuo sw.js già presente (non forzo network-first qui)
+    renderHome();
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(err => console.warn('[SW register]', err));
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
     }
   });
 })();
