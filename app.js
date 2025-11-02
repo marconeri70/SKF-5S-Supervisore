@@ -75,7 +75,7 @@
         const n2=prompt('Conferma nuovo PIN:'); if(n1!==n2) return alert('Non coincide');
         localStorage.setItem(PIN_KEY,n1);
       }else{
-        const p=prompt('Imposta PIN (demo 1234):'); if(!p) return; localStorage.setItem(PIN_KEY,p);
+        const p=prompt('Imposta PIN (6170):'); if(!p) return; localStorage.setItem(PIN_KEY,p);
       }
       paint();
     };
