@@ -1,4 +1,4 @@
-// SKF 5S Supervisor — build 2.3.13
+// SKF 5S Supervisor — build 2.3.14
 (() => {
   const STORAGE_KEY = 'skf5s:supervisor:data';
   const PIN_KEY     = 'skf5s:pin';
@@ -292,5 +292,6 @@
   window.addEventListener('DOMContentLoaded', ()=>{
     initCommon(); initLock(); render();
     if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+    console.log('SKF 5S Supervisor app.js v2.3.14');
   });
 })();
