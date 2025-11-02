@@ -2,27 +2,28 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>SKF 5S — Supervisor</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/skf-192.png">
   <meta name="theme-color" content="#0d63d6">
-  <link rel="stylesheet" href="style.css?v=2315">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="home">
 <header class="appbar">
   <div class="brand">
+    <a href="#" class="btn back" aria-label="Indietro" hidden>Indietro</a>
     <img src="assets/skf-logo.png" alt="SKF" class="brand-logo">
     <span class="brand-title">SKF 5S</span>
     <span class="brand-badge">Supervisor</span>
   </div>
-  <nav class="actions" id="top-actions">
-    <button id="btn-notes" class="btn ghost">Note</button>
+  <nav class="actions">
+    <button id="btn-notes" class="btn ghost" onclick="location.href='notes.html'">Note</button>
     <button id="btn-import" class="btn primary">Importa</button>
     <input id="import-input" type="file" accept="application/json,.json" multiple hidden>
     <button id="btn-export" class="btn outline">Esporta dati (PIN)</button>
-    <button id="btn-lock" class="btn icon" title="PIN">🔒</button>
-    <a href="checklist.html?v=2315" class="btn big">Vai alla checklist →</a>
+    <button id="btn-lock" class="btn icon" title="Blocco/Sblocco" aria-label="PIN">🔒</button>
+    <a href="checklist.html" class="btn big">Vai alla checklist →</a>
   </nav>
 </header>
 
@@ -43,29 +44,31 @@
     </div>
   </section>
 
-  <!-- CH in ritardo (popolato da JS) -->
-  <section id="delay-section" class="card" hidden>
-    <h3>⚠️ CH in ritardo</h3>
-    <ul class="delay-list" id="delay-list"></ul>
-  </section>
-
   <section class="card">
     <div class="card-head">
       <h3>Andamento — Tutti i CH</h3>
-      <div class="segmented" id="segmented-type" role="group" aria-label="Tipo CH">
+      <div class="segmented" role="group" aria-label="Tipo CH">
         <button class="seg on" data-type="all">Tutti</button>
         <button class="seg" data-type="Rettifica">Rettifica</button>
         <button class="seg" data-type="MONTAGGIO">Montaggio</button>
       </div>
     </div>
 
+<section class="card" id="delay-section" hidden>
+  <h3>⚠️ CH in ritardo</h3>
+  <p class="muted small">I seguenti canali non sono stati aggiornati da più di 7 giorni:</p>
+  <ul id="delay-list" class="delay-list"></ul>
+</section>
+     
     <div class="hscroll">
       <div id="board-all" class="board-all"></div>
     </div>
 
     <div class="legend5s">
-      <span class="dot s1">1S</span><span class="dot s2">2S</span>
-      <span class="dot s3">3S</span><span class="dot s4">4S</span>
+      <span class="dot s1">1S</span>
+      <span class="dot s2">2S</span>
+      <span class="dot s3">3S</span>
+      <span class="dot s4">4S</span>
       <span class="dot s5">5S</span>
     </div>
 
@@ -75,9 +78,9 @@
 
 <footer class="safe-bottom">
   <button id="btn-export-supervisor" class="btn huge outline">Esporta dati per Supervisore (PIN)</button>
-  <div class="version">v2.3.15 • PWA ready</div>
+  <div class="version">v2.3.8 • PWA ready</div>
 </footer>
 
-<script src="app.js?v=2315" defer></script>
+<script src="app.js"></script>
 </body>
 </html>
