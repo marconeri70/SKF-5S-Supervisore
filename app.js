@@ -1,7 +1,5 @@
-// SKF 5S Supervisor — v2.4.1 (FIX NOTE + tasto Note robusto)
-// Nessun cambiamento grafico. Solo:
-// - parser note molto più flessibile (supporto: notes, note, Notes, NOTE, S1..S5, campi *nota*, oggetti/array, stringhe con \n)
-// - tasto Note funzionante anche come <button id="btn-notes"> o <a href="notes.html">
+// SKF 5S Supervisor — v2.4.2 (FIX NOTE deep-scan only)
+// Nessuna modifica grafica/UX. Solo import note super-robusto.
 
 (() => {
   const STORAGE_KEY = 'skf5s:supervisor:data';
@@ -23,70 +21,88 @@
   const fmtPercent = v => `${Math.round(Number(v)||0)}%`;
   const mean = p => Math.round(((+p.s1||0)+(+p.s2||0)+(+p.s3||0)+(+p.s4||0)+(+p.s5||0))/5);
 
-  // ---- NOTE PARSER ULTRA-ROBUSTO ----
-  // Accetta:
-  //  A) notes (array di {s|S|type, text|note, date?})
-  //  B) note/Notes/NOTE
-  //  C) oggetto {s1:"riga1\nriga2", s2:[...], ...}
-  //  D) root con S1..S5 (array/stringhe)
-  //  E) qualsiasi campo che contenga "note" o "nota" (anche "note1S", "notaS3" ecc.) -> prova a capire la S dal nome
-  function parseNotesFlexibleAny(obj, fallbackDate){
+  // Trova "S1..S5" in una stringa (chiave o segmento del path)
+  function findS(tag){
+    const m = String(tag||'').match(/(?:^|[^A-Za-z])(?:S?\s*([1-5])|([1-5])\s*S)(?![A-Za-z])/i);
+    if (!m) return '';
+    const n = m[1] || m[2];
+    return n ? ('S'+n) : '';
+  }
+
+  // È un campo che probabilmente contiene note?
+  const NOTEY = /(note|nota|osserv|anom|ritard)/i;
+
+  // Colleziona tutte le stringhe “nota” da un valore (string/array/object)
+  function collectTexts(val){
     const out = [];
-    const pushItem = (sTag, txt) => {
-      const s = (sTag || '').toString();
-      const S = s.match(/[1-5]/)?.[0] ? ('S' + s.match(/[1-5]/)[0]) : (s.toUpperCase().startsWith('S') ? s.toUpperCase() : '');
-      const text = String(txt||'').trim();
-      if (text) out.push({ s: S || sTag || '', text, date: fallbackDate });
-    };
-
-    const feedValue = (key, val) => {
-      // prova a capire la S dal nome chiave (es: "noteS3", "nota_1S", "S4_note")
-      const m = String(key).match(/[1-5]/);
-      const sHint = m ? 'S' + m[0] : '';
-      if (typeof val === 'string'){
-        val.split(/\n+/).forEach(line => pushItem(sHint, line));
-      } else if (Array.isArray(val)){
-        val.forEach(v => pushItem(sHint, v));
-      } else if (val && typeof val === 'object'){
-        // oggetto annidato: estrai stringhe/array
-        Object.entries(val).forEach(([k,v]) => feedValue(k, v));
+    if (val == null) return out;
+    if (typeof val === 'string'){
+      val.split(/\n+/).forEach(line => {
+        const t = line.trim();
+        if (t) out.push(t);
+      });
+    } else if (Array.isArray(val)){
+      for (const v of val){
+        const t = (v==null) ? '' : String(v).trim();
+        if (t) out.push(t);
       }
-    };
-
-    // A/B: cerca campi "notes"/"note"
-    const candKeys = Object.keys(obj||{});
-    const firstNotesKey = candKeys.find(k => /^notes?$/i.test(k));
-    if (firstNotesKey){
-      const src = obj[firstNotesKey];
-      if (Array.isArray(src)){
-        for (const n of src){
-          if (!n) continue;
-          const sTag = n.s || n.S || n.type || n.sezione || '';
-          const text = n.text || n.note || n.nota || '';
-          const date = n.date || fallbackDate;
-          if (String(text||'').trim()) out.push({ s: sTag, text: String(text), date });
-        }
-      } else if (src && typeof src === 'object'){
-        Object.entries(src).forEach(([k,v]) => feedValue(k, v));
-      } else if (typeof src === 'string'){
-        src.split(/\n+/).forEach(line => pushItem('', line));
+    } else if (typeof val === 'object'){
+      for (const [k,v] of Object.entries(val)){
+        // se è un oggetto, estrai tutte le stringhe ricorsivamente
+        collectTexts(v).forEach(t => out.push(t));
       }
     }
+    return out;
+  }
 
-    // C/D: supporto S1..S5 su root
+  // Deep-scan del JSON: estrae note ovunque compaiano (nome chiave NOTEY)
+  // Mantiene indizi di S dal path/keys.
+  function deepExtractNotes(obj, fallbackDate){
+    const results = [];
+
+    function walk(node, pathKeys){
+      if (node == null) return;
+
+      if (Array.isArray(node)){
+        node.forEach((item, idx) => walk(item, pathKeys.concat('['+idx+']')));
+        return;
+      }
+
+      if (typeof node === 'object'){
+        for (const [k, v] of Object.entries(node)){
+          const nextPath = pathKeys.concat(k);
+
+          // Se la chiave contiene NOTEY, trattiamo v come contenuto di note
+          if (NOTEY.test(k)){
+            const sFromKey   = findS(k);
+            const sFromPath  = sFromKey || pathKeys.map(findS).find(Boolean) || '';
+            const texts = collectTexts(v);
+            for (const txt of texts){
+              results.push({ s: sFromPath, text: txt, date: fallbackDate });
+            }
+          }
+
+          // Se NON è una chiave di note, continuiamo a scendere (potrebbero esserci note più sotto)
+          walk(v, nextPath);
+        }
+        return;
+      }
+
+      // Se è un valore “semplice” non facciamo nulla (le note le gestiamo via NOTEY)
+    }
+
+    walk(obj, []);
+
+    // Supporto extra: chiavi S1..S5 in root con dentro testi/array
     ['S1','S2','S3','S4','S5','s1','s2','s3','s4','s5','1S','2S','3S','4S','5S'].forEach(k=>{
-      if (obj[k] !== undefined) feedValue(k, obj[k]);
+      if (obj && obj[k] !== undefined){
+        const texts = collectTexts(obj[k]);
+        const S = findS(k) || '';
+        for (const t of texts) results.push({ s: S, text: t, date: fallbackDate });
+      }
     });
 
-    // E: qualsiasi campo che contenga "note" o "nota"
-    candKeys
-      .filter(k => /note|nota/i.test(k))
-      .forEach(k => {
-        if (k === firstNotesKey) return; // già gestito
-        feedValue(k, obj[k]);
-      });
-
-    return out;
+    return results;
   }
 
   function parseRec(obj){
@@ -105,8 +121,8 @@
       s5: Number(rec.points.s5 || rec.points.S5 || rec.points['5S'] || 0)
     };
 
-    // NOTE: parser completo
-    rec.notes = parseNotesFlexibleAny(obj, rec.date);
+    // NOTE: deep scan super-robusto
+    rec.notes = deepExtractNotes(obj, rec.date);
 
     return rec;
   }
@@ -132,7 +148,7 @@
 
     const merged = Array.from(byKey.values()).sort((a,b)=> new Date(a.date)-new Date(b.date));
     store.save(merged);
-    render(); // aggiorna pagina corrente (home/checklist/notes)
+    render(); // aggiorna pagina corrente
   }
 
   function exportAll(){
@@ -174,7 +190,7 @@
     };
   }
 
-  // ---------------- HOME (come tua versione) ----------------
+  // ---------------- HOME (invariata) ----------------
   function renderHome(){
     const wrap = $('#board-all'); if (!wrap) return;
 
@@ -222,7 +238,7 @@
     });
   }
 
-  // ---------------- Ritardi ----------------
+  // ---------------- Ritardi (invariato) ----------------
   function renderDelays(){
     const box = $('#delay-section'); if (!box) return;
     const list = $('#delay-list');
@@ -257,7 +273,7 @@
     }
   }
 
-  // ---------------- Stampa scheda singola ----------------
+  // ---------------- Stampa scheda singola (invariato) ----------------
   function printCard(card){
     const w = window.open('', '_blank');
     w.document.write(`<title>Stampa CH</title><style>
@@ -275,7 +291,7 @@
     w.document.close(); w.focus(); w.print(); setTimeout(()=>w.close(),100);
   }
 
-  // ---------------- Checklist ----------------
+  // ---------------- Checklist (invariata) ----------------
   function renderChecklist(){
     const wrap = $('#cards'); if (!wrap) return;
 
@@ -329,7 +345,6 @@
         </div>`;
       wrap.appendChild(card);
 
-      // bind pulsanti card
       card.querySelector('.btn-print').onclick  = () => printCard(card);
       card.querySelector('.btn-toggle').onclick = () => card.classList.toggle('compact');
       card.querySelector('[data-note]')?.addEventListener('click', (e)=>{
@@ -338,14 +353,12 @@
         location.href = `notes.html?${params.toString()}`;
       });
 
-      // highlight se richiesto
       if (hlCh && ch === hlCh){
         card.classList.add('hl');
         setTimeout(()=> card.scrollIntoView({behavior:'smooth', block:'center'}), 50);
       }
     }
 
-    // comprimi/espandi TUTTI
     const toggleAll = $('#btn-toggle-all');
     if (toggleAll){
       let compact = false;
@@ -358,11 +371,9 @@
     $('#btn-print-all')?.addEventListener('click', () => window.print());
   }
 
-  // ---------------- Notes (solo evidenziazione da query) ----------------
+  // ---------------- Evidenzia note da query (invariato) ----------------
   function renderNotes(){
     const box = $('#notes-list'); if (!box) return;
-    // La pagina notes.html che già hai deve leggere localStorage e popolare #notes-list.
-    // Qui gestiamo solo l’evidenziazione quando arrivi con ?hlCh=...
     const qs = new URLSearchParams(location.search);
     const hlCh = qs.get('hlCh') ? decodeURIComponent(qs.get('hlCh')) : '';
     if (!hlCh) return;
@@ -378,15 +389,12 @@
 
   // ---------------- Binder comune ----------------
   function initCommon(){
-    // Import
     $('#btn-import')?.addEventListener('click', () => $('#import-input')?.click());
     $('#import-input')?.addEventListener('change', (e) => handleImport(e.target.files));
 
-    // Export
     $('#btn-export')?.addEventListener('click', exportAll);
     $('#btn-export-supervisor')?.addEventListener('click', exportAll);
 
-    // Tasto Note (robusto: se è un <button id="btn-notes">, forzo navigazione)
     const btnNotes = $('#btn-notes');
     if (btnNotes && btnNotes.tagName !== 'A'){
       btnNotes.addEventListener('click', () => { location.href = 'notes.html'; });
