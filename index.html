@@ -18,7 +18,7 @@
     <span class="brand-badge">Supervisor</span>
   </div>
   <nav class="actions">
-    <button id="btn-notes" class="btn ghost" onclick="location.href='notes.html'">Note</button>
+    <a href="notes.html" class="btn ghost">Note</a>
     <button id="btn-import" class="btn primary">Importa</button>
     <input id="import-input" type="file" accept="application/json,.json" multiple hidden>
     <button id="btn-export" class="btn outline">Esporta dati (PIN)</button>
@@ -44,6 +44,12 @@
     </div>
   </section>
 
+  <!-- CH in ritardo (riempita da app.js se presenti) -->
+  <section id="delay-section" class="card" hidden>
+    <h3>⚠️ CH in ritardo</h3>
+    <ul class="delay-list" id="delay-list"></ul>
+  </section>
+
   <section class="card">
     <div class="card-head">
       <h3>Andamento — Tutti i CH</h3>
@@ -54,14 +60,9 @@
       </div>
     </div>
 
-<section class="card" id="delay-section" hidden>
-  <h3>⚠️ CH in ritardo</h3>
-  <p class="muted small">I seguenti canali non sono stati aggiornati da più di 7 giorni:</p>
-  <ul id="delay-list" class="delay-list"></ul>
-</section>
-     
+    <!-- NUOVO: strip orizzontale di grafici a torta -->
     <div class="hscroll">
-      <div id="board-all" class="board-all"></div>
+      <div id="pie-strip" class="piestrip"></div>
     </div>
 
     <div class="legend5s">
@@ -71,14 +72,12 @@
       <span class="dot s4">4S</span>
       <span class="dot s5">5S</span>
     </div>
-
-    <div id="chip-strip" class="chips"></div>
   </section>
 </main>
 
 <footer class="safe-bottom">
   <button id="btn-export-supervisor" class="btn huge outline">Esporta dati per Supervisore (PIN)</button>
-  <div class="version">v2.3.8 • PWA ready</div>
+  <div class="version">v2.3.16 • PWA ready</div>
 </footer>
 
 <script src="app.js"></script>
