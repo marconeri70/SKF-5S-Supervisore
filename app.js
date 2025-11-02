@@ -1,7 +1,7 @@
-// SKF 5S Supervisor — v2.4.0
-// FIX: ritardi -> apri CH in checklist con evidenziazione; comprimi/espandi globale e per-card
-// Home: grafici a colonne verticali 1S..5S in strip orizzontale
-// Checklist: bottone "Vedi note" accanto a Comprimi/Espandi
+// SKF 5S Supervisor — v2.4.1 (FIX NOTE + tasto Note robusto)
+// Nessun cambiamento grafico. Solo:
+// - parser note molto più flessibile (supporto: notes, note, Notes, NOTE, S1..S5, campi *nota*, oggetti/array, stringhe con \n)
+// - tasto Note funzionante anche come <button id="btn-notes"> o <a href="notes.html">
 
 (() => {
   const STORAGE_KEY = 'skf5s:supervisor:data';
@@ -10,7 +10,7 @@
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-  // -------- Storage
+  // ---------------- Storage ----------------
   const store = {
     load(){
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
@@ -19,34 +19,73 @@
     save(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
   };
 
-  // -------- Utils
+  // ---------------- Utils ----------------
   const fmtPercent = v => `${Math.round(Number(v)||0)}%`;
   const mean = p => Math.round(((+p.s1||0)+(+p.s2||0)+(+p.s3||0)+(+p.s4||0)+(+p.s5||0))/5);
 
-  function parseNotesFlexible(src, fallbackDate){
+  // ---- NOTE PARSER ULTRA-ROBUSTO ----
+  // Accetta:
+  //  A) notes (array di {s|S|type, text|note, date?})
+  //  B) note/Notes/NOTE
+  //  C) oggetto {s1:"riga1\nriga2", s2:[...], ...}
+  //  D) root con S1..S5 (array/stringhe)
+  //  E) qualsiasi campo che contenga "note" o "nota" (anche "note1S", "notaS3" ecc.) -> prova a capire la S dal nome
+  function parseNotesFlexibleAny(obj, fallbackDate){
     const out = [];
-    if (!src) return out;
-    if (Array.isArray(src)){
-      for (const n of src){
-        if (!n) continue;
-        out.push({ s:n.s||n.S||n.type||'', text:n.text||n.note||'', date:n.date||fallbackDate });
+    const pushItem = (sTag, txt) => {
+      const s = (sTag || '').toString();
+      const S = s.match(/[1-5]/)?.[0] ? ('S' + s.match(/[1-5]/)[0]) : (s.toUpperCase().startsWith('S') ? s.toUpperCase() : '');
+      const text = String(txt||'').trim();
+      if (text) out.push({ s: S || sTag || '', text, date: fallbackDate });
+    };
+
+    const feedValue = (key, val) => {
+      // prova a capire la S dal nome chiave (es: "noteS3", "nota_1S", "S4_note")
+      const m = String(key).match(/[1-5]/);
+      const sHint = m ? 'S' + m[0] : '';
+      if (typeof val === 'string'){
+        val.split(/\n+/).forEach(line => pushItem(sHint, line));
+      } else if (Array.isArray(val)){
+        val.forEach(v => pushItem(sHint, v));
+      } else if (val && typeof val === 'object'){
+        // oggetto annidato: estrai stringhe/array
+        Object.entries(val).forEach(([k,v]) => feedValue(k, v));
       }
-      return out;
-    }
-    if (typeof src === 'object'){
-      for (const k of Object.keys(src)){
-        const v = src[k];
-        if (typeof v === 'string' && v.trim()){
-          v.split(/\n+/).forEach(line=>{
-            const t = line.trim(); if (t) out.push({ s:k, text:t, date:fallbackDate });
-          });
-        } else if (Array.isArray(v)){
-          v.forEach(line=>{
-            const t = String(line||'').trim(); if (t) out.push({ s:k, text:t, date:fallbackDate });
-          });
+    };
+
+    // A/B: cerca campi "notes"/"note"
+    const candKeys = Object.keys(obj||{});
+    const firstNotesKey = candKeys.find(k => /^notes?$/i.test(k));
+    if (firstNotesKey){
+      const src = obj[firstNotesKey];
+      if (Array.isArray(src)){
+        for (const n of src){
+          if (!n) continue;
+          const sTag = n.s || n.S || n.type || n.sezione || '';
+          const text = n.text || n.note || n.nota || '';
+          const date = n.date || fallbackDate;
+          if (String(text||'').trim()) out.push({ s: sTag, text: String(text), date });
         }
+      } else if (src && typeof src === 'object'){
+        Object.entries(src).forEach(([k,v]) => feedValue(k, v));
+      } else if (typeof src === 'string'){
+        src.split(/\n+/).forEach(line => pushItem('', line));
       }
     }
+
+    // C/D: supporto S1..S5 su root
+    ['S1','S2','S3','S4','S5','s1','s2','s3','s4','s5','1S','2S','3S','4S','5S'].forEach(k=>{
+      if (obj[k] !== undefined) feedValue(k, obj[k]);
+    });
+
+    // E: qualsiasi campo che contenga "note" o "nota"
+    candKeys
+      .filter(k => /note|nota/i.test(k))
+      .forEach(k => {
+        if (k === firstNotesKey) return; // già gestito
+        feedValue(k, obj[k]);
+      });
+
     return out;
   }
 
@@ -65,23 +104,19 @@
       s4: Number(rec.points.s4 || rec.points.S4 || rec.points['4S'] || 0),
       s5: Number(rec.points.s5 || rec.points.S5 || rec.points['5S'] || 0)
     };
-    rec.notes = parseNotesFlexible(obj.notes, rec.date);
-    for (const k of Object.keys(obj||{})){
-      if (/^S[1-5]$/i.test(k) && Array.isArray(obj[k])){
-        for (const line of obj[k]){
-          const t = String(line||'').trim();
-          if (t) rec.notes.push({ s:k, text:t, date:rec.date });
-        }
-      }
-    }
+
+    // NOTE: parser completo
+    rec.notes = parseNotesFlexibleAny(obj, rec.date);
+
     return rec;
   }
 
-  // -------- Import / Export / PIN
+  // ---------------- Import / Export / PIN ----------------
   async function handleImport(files){
     if (!files || !files.length) return;
     const current = store.load();
     const byKey = new Map(current.map(r => [r.area + '|' + r.channel + '|' + r.date, r]));
+
     for (const f of files){
       try{
         const txt = await f.text();
@@ -94,9 +129,10 @@
         alert('Errore file: ' + f.name);
       }
     }
+
     const merged = Array.from(byKey.values()).sort((a,b)=> new Date(a.date)-new Date(b.date));
     store.save(merged);
-    render(); // aggiorna pagina corrente
+    render(); // aggiorna pagina corrente (home/checklist/notes)
   }
 
   function exportAll(){
@@ -128,15 +164,17 @@
         const n1 = prompt('Nuovo PIN (4-10 cifre):'); if (!n1) return;
         const n2 = prompt('Conferma nuovo PIN:');     if (n2 !== n1){ alert('Non coincide'); return; }
         localStorage.setItem(PIN_KEY, n1);
-        alert('PIN aggiornato.'); paint();
+        alert('PIN aggiornato.');
+        paint();
       } else {
         const n1 = prompt('Imposta PIN (demo 1234):'); if (!n1) return;
-        localStorage.setItem(PIN_KEY, n1); paint();
+        localStorage.setItem(PIN_KEY, n1);
+        paint();
       }
     };
   }
 
-  // -------- HOME (grafico a colonne verticali 1S..5S per CH)
+  // ---------------- HOME (come tua versione) ----------------
   function renderHome(){
     const wrap = $('#board-all'); if (!wrap) return;
 
@@ -156,6 +194,7 @@
     for (const [ch, arr] of Array.from(byCh.entries()).sort()){
       const last = arr.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
       const p = last?.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
+
       const card = document.createElement('div');
       card.className = 'board';
       card.innerHTML = `
@@ -178,13 +217,12 @@
       wrap.appendChild(card);
     }
 
-    // toggle filtro
     $$('.segmented .seg').forEach(b=>{
       b.onclick = () => { $$('.segmented .seg').forEach(x=>x.classList.remove('on')); b.classList.add('on'); renderHome(); };
     });
   }
 
-  // -------- Ritardi: link sia a NOTE che a CHECKLIST evidenziando
+  // ---------------- Ritardi ----------------
   function renderDelays(){
     const box = $('#delay-section'); if (!box) return;
     const list = $('#delay-list');
@@ -219,7 +257,7 @@
     }
   }
 
-  // -------- Stampa scheda singola
+  // ---------------- Stampa scheda singola ----------------
   function printCard(card){
     const w = window.open('', '_blank');
     w.document.write(`<title>Stampa CH</title><style>
@@ -237,7 +275,7 @@
     w.document.close(); w.focus(); w.print(); setTimeout(()=>w.close(),100);
   }
 
-  // -------- Checklist
+  // ---------------- Checklist ----------------
   function renderChecklist(){
     const wrap = $('#cards'); if (!wrap) return;
 
@@ -291,7 +329,7 @@
         </div>`;
       wrap.appendChild(card);
 
-      // bind pulsanti
+      // bind pulsanti card
       card.querySelector('.btn-print').onclick  = () => printCard(card);
       card.querySelector('.btn-toggle').onclick = () => card.classList.toggle('compact');
       card.querySelector('[data-note]')?.addEventListener('click', (e)=>{
@@ -300,7 +338,7 @@
         location.href = `notes.html?${params.toString()}`;
       });
 
-      // evidenziazione se richiesto
+      // highlight se richiesto
       if (hlCh && ch === hlCh){
         card.classList.add('hl');
         setTimeout(()=> card.scrollIntoView({behavior:'smooth', block:'center'}), 50);
@@ -320,46 +358,55 @@
     $('#btn-print-all')?.addEventListener('click', () => window.print());
   }
 
-  // -------- Notes (solo highlight da query, il resto resta come in tua notes.html)
+  // ---------------- Notes (solo evidenziazione da query) ----------------
   function renderNotes(){
     const box = $('#notes-list'); if (!box) return;
-    // lascia il rendering della tua notes.html se già presente
-    // qui gestiamo solo l’evidenziazione da hlCh/hlDate
+    // La pagina notes.html che già hai deve leggere localStorage e popolare #notes-list.
+    // Qui gestiamo solo l’evidenziazione quando arrivi con ?hlCh=...
     const qs = new URLSearchParams(location.search);
     const hlCh = qs.get('hlCh') ? decodeURIComponent(qs.get('hlCh')) : '';
     if (!hlCh) return;
 
-    // piccola attesa per consentire a notes.html di aver creato le voci
     setTimeout(()=>{
-      const nodes = $$('#notes-list .note');
-      nodes.forEach(n=>{
+      $$('#notes-list .note').forEach(n=>{
         if (n.textContent.includes(hlCh)){
           n.style.boxShadow = '0 0 0 3px rgba(255,0,0,.35) inset';
         }
       });
-    }, 100);
+    }, 120);
   }
 
-  // -------- Binder comune
+  // ---------------- Binder comune ----------------
   function initCommon(){
+    // Import
     $('#btn-import')?.addEventListener('click', () => $('#import-input')?.click());
     $('#import-input')?.addEventListener('change', (e) => handleImport(e.target.files));
+
+    // Export
     $('#btn-export')?.addEventListener('click', exportAll);
     $('#btn-export-supervisor')?.addEventListener('click', exportAll);
+
+    // Tasto Note (robusto: se è un <button id="btn-notes">, forzo navigazione)
+    const btnNotes = $('#btn-notes');
+    if (btnNotes && btnNotes.tagName !== 'A'){
+      btnNotes.addEventListener('click', () => { location.href = 'notes.html'; });
+    }
   }
 
-  // -------- Dispatcher
+  // ---------------- Dispatcher ----------------
   function render(){
     renderHome();
     renderChecklist();
     renderNotes();
   }
 
-  // -------- Boot
+  // ---------------- Boot ----------------
   window.addEventListener('DOMContentLoaded', () => {
     initCommon();
     initLock();
     render();
-    if ('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+    if ('serviceWorker' in navigator){
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
   });
 })();
