@@ -2,36 +2,29 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>SKF 5S — Schede (Supervisor)</title>
-  <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/skf-192.png">
-  <meta name="theme-color" content="#0d63d6">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2315">
 </head>
 <body data-page="checklist">
 <header class="appbar">
-  <div class="brand">
-    <a href="index.html" class="btn back">Indietro</a>
-    <img src="assets/skf-logo.png" alt="SKF" class="brand-logo">
-    <span class="brand-title">SKF 5S</span>
-    <span class="brand-badge">Supervisor</span>
-  </div>
+  <a href="index.html?v=2315" class="btn back">Indietro</a>
+  <div class="brand"><img src="assets/skf-logo.png" class="brand-logo"><span class="brand-title">SKF 5S</span><span class="brand-badge">Supervisor</span></div>
   <nav class="actions">
     <button id="btn-print-all" class="btn outline">Stampa tutti i CH</button>
-    <button id="btn-toggle-all" class="btn">Comprimi / Espandi tutti i CH</button>
-    <button id="btn-lock" class="btn icon" title="Blocco/Sblocco">🔒</button>
-    <button id="btn-import" class="btn primary">Importa</button>
-    <input id="import-input" type="file" accept="application/json,.json" multiple hidden>
-    <button id="btn-notes" class="btn ghost">Note</button>
+    <button id="btn-toggle-all" class="btn outline">Comprimi / Espandi tutti i CH</button>
+    <button id="btn-lock" class="btn icon" title="PIN">🔒</button>
+    <button id="btn-import" class="btn primary">Importa</button><input id="import-input" type="file" accept="application/json,.json" multiple hidden>
+    <a href="notes.html?v=2315" class="btn ghost">Note</a>
   </nav>
 </header>
 
 <main class="container">
-  <section id="cards" class="stack"></section>
+  <section id="cards"></section>
 </main>
 
-<footer class="version">v2.3.8</footer>
-<script src="app.js"></script>
+<footer class="safe-bottom"><div class="version">v2.3.15</div></footer>
+<script src="app.js?v=2315" defer></script>
 </body>
 </html>
