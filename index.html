@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>SKF 5S — Supervisor</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/skf-192.png">
@@ -12,16 +12,16 @@
 <body data-page="home">
 <header class="appbar">
   <div class="brand">
-    <img src="assets/skf-logo.png" alt="SKF" class="brand-logo">
+    <img src="assets/skf-logo.png" class="brand-logo" alt="SKF">
     <span class="brand-title">SKF 5S</span>
     <span class="brand-badge">Supervisor</span>
   </div>
   <nav class="actions">
-    <a href="notes.html" class="btn ghost">Note</a>
+    <button id="btn-notes" class="btn ghost">Note</button>
     <button id="btn-import" class="btn primary">Importa</button>
     <input id="import-input" type="file" accept="application/json,.json" multiple hidden>
     <button id="btn-export" class="btn outline">Esporta dati (PIN)</button>
-    <button id="btn-lock" class="btn icon" title="Blocco/Sblocco" aria-label="PIN">🔒</button>
+    <button id="btn-lock" class="btn icon" title="PIN">🔒</button>
     <a href="checklist.html" class="btn big">Vai alla checklist →</a>
   </nav>
 </header>
@@ -38,37 +38,40 @@
         <li><span class="pill s5">5S Sostenere</span> — Abitudine e miglioramento continuo.</li>
       </ol>
     </div>
-    <div class="col img-col">
-      <img src="assets/5S.png" alt="Schema 5S" class="hero5s">
-    </div>
-  </section>
-
-  <!-- CH in ritardo -->
-  <section id="delay-section" class="card" hidden>
-    <h3>⚠️ CH in ritardo</h3>
-    <ul class="delay-list" id="delay-list"></ul>
+    <div class="col img-col"><img src="assets/5S.png" alt="Schema 5S" class="hero5s"></div>
   </section>
 
   <section class="card">
     <div class="card-head">
       <h3>Andamento — Tutti i CH</h3>
-      <div class="segmented" role="group" aria-label="Tipo CH">
+      <div class="segmented" role="group">
         <button class="seg on" data-type="all">Tutti</button>
         <button class="seg" data-type="Rettifica">Rettifica</button>
         <button class="seg" data-type="MONTAGGIO">Montaggio</button>
       </div>
     </div>
 
-    <!-- STRIP orizzontale di card con colonne verticali 1S..5S -->
     <div class="hscroll">
       <div id="board-all" class="board-all"></div>
     </div>
+
+    <div class="legend5s">
+      <span class="dot s1">1S</span><span class="dot s2">2S</span>
+      <span class="dot s3">3S</span><span class="dot s4">4S</span><span class="dot s5">5S</span>
+    </div>
+
+    <section id="delay-section" class="card" style="display:none">
+      <h3>CH in ritardo</h3>
+      <ul class="delay-list"></ul>
+    </section>
+
+    <div id="chip-strip" class="chips"></div>
   </section>
 </main>
 
 <footer class="safe-bottom">
   <button id="btn-export-supervisor" class="btn huge outline">Esporta dati per Supervisore (PIN)</button>
-  <div class="version">v2.4.0 • PWA ready</div>
+  <div class="version">v2.4.4</div>
 </footer>
 
 <script src="app.js"></script>
