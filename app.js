@@ -1,14 +1,12 @@
-// SKF 5S Supervisor — v2.4.2 (FIX NOTE deep-scan only)
-// Nessuna modifica grafica/UX. Solo import note super-robusto.
+// SKF 5S Supervisor — v2.4.6 (Note open/filtro + grafici checklist)
+// Mantiene tutto il resto invariato.
 
 (() => {
   const STORAGE_KEY = 'skf5s:supervisor:data';
   const PIN_KEY     = 'skf5s:pin';
-
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-  // ---------------- Storage ----------------
   const store = {
     load(){
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
@@ -17,92 +15,62 @@
     save(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
   };
 
-  // ---------------- Utils ----------------
   const fmtPercent = v => `${Math.round(Number(v)||0)}%`;
   const mean = p => Math.round(((+p.s1||0)+(+p.s2||0)+(+p.s3||0)+(+p.s4||0)+(+p.s5||0))/5);
 
-  // Trova "S1..S5" in una stringa (chiave o segmento del path)
-  function findS(tag){
-    const m = String(tag||'').match(/(?:^|[^A-Za-z])(?:S?\s*([1-5])|([1-5])\s*S)(?![A-Za-z])/i);
-    if (!m) return '';
-    const n = m[1] || m[2];
-    return n ? ('S'+n) : '';
-  }
-
-  // È un campo che probabilmente contiene note?
-  const NOTEY = /(note|nota|osserv|anom|ritard)/i;
-
-  // Colleziona tutte le stringhe “nota” da un valore (string/array/object)
-  function collectTexts(val){
+  // --- NOTES parser (supporta notes.{s1..s5} string/array) ---
+  function parseNotesFlexible(src, fallbackDate){
     const out = [];
-    if (val == null) return out;
-    if (typeof val === 'string'){
-      val.split(/\n+/).forEach(line => {
+    if (!src) return out;
+
+    const pushLines = (S, val) => {
+      if (val == null) return;
+      if (typeof val === 'string'){
+        val.split(/\n+/).forEach(line=>{
+          const t = line.trim();
+          if (t) out.push({ s:S.toUpperCase(), text:t, date:fallbackDate });
+        });
+      } else if (Array.isArray(val)){
+        val.forEach(x=>{
+          const t = String(x ?? '').trim();
+          if (t) out.push({ s:S.toUpperCase(), text:t, date:fallbackDate });
+        });
+      }
+    };
+
+    if (typeof src === 'object' && !Array.isArray(src)){
+      for (const [k, v] of Object.entries(src)){
+        const m = String(k).match(/^(?:s|S)?\s*([1-5])$|^([1-5])\s*S$/);
+        if (m){
+          const n = m[1] || m[2];
+          pushLines('S'+n, v);
+        }
+      }
+      return out;
+    }
+    if (Array.isArray(src)){
+      for (const n of src){
+        if (!n) continue;
+        if (typeof n === 'string'){
+          const t = n.trim();
+          if (t) out.push({ s:'', text:t, date:fallbackDate });
+        } else if (typeof n === 'object'){
+          const s = (n.s || n.S || n.type || '').toString().toUpperCase();
+          const text = (n.text || n.note || '').toString();
+          if (text.trim()){
+            out.push({ s, text, date:(n.date || fallbackDate) });
+          }
+        }
+      }
+      return out;
+    }
+    if (typeof src === 'string' && src.trim()){
+      src.split(/\n+/).forEach(line=>{
         const t = line.trim();
-        if (t) out.push(t);
+        if (t) out.push({ s:'', text:t, date:fallbackDate });
       });
-    } else if (Array.isArray(val)){
-      for (const v of val){
-        const t = (v==null) ? '' : String(v).trim();
-        if (t) out.push(t);
-      }
-    } else if (typeof val === 'object'){
-      for (const [k,v] of Object.entries(val)){
-        // se è un oggetto, estrai tutte le stringhe ricorsivamente
-        collectTexts(v).forEach(t => out.push(t));
-      }
     }
     return out;
-  }
-
-  // Deep-scan del JSON: estrae note ovunque compaiano (nome chiave NOTEY)
-  // Mantiene indizi di S dal path/keys.
-  function deepExtractNotes(obj, fallbackDate){
-    const results = [];
-
-    function walk(node, pathKeys){
-      if (node == null) return;
-
-      if (Array.isArray(node)){
-        node.forEach((item, idx) => walk(item, pathKeys.concat('['+idx+']')));
-        return;
-      }
-
-      if (typeof node === 'object'){
-        for (const [k, v] of Object.entries(node)){
-          const nextPath = pathKeys.concat(k);
-
-          // Se la chiave contiene NOTEY, trattiamo v come contenuto di note
-          if (NOTEY.test(k)){
-            const sFromKey   = findS(k);
-            const sFromPath  = sFromKey || pathKeys.map(findS).find(Boolean) || '';
-            const texts = collectTexts(v);
-            for (const txt of texts){
-              results.push({ s: sFromPath, text: txt, date: fallbackDate });
-            }
-          }
-
-          // Se NON è una chiave di note, continuiamo a scendere (potrebbero esserci note più sotto)
-          walk(v, nextPath);
-        }
-        return;
-      }
-
-      // Se è un valore “semplice” non facciamo nulla (le note le gestiamo via NOTEY)
-    }
-
-    walk(obj, []);
-
-    // Supporto extra: chiavi S1..S5 in root con dentro testi/array
-    ['S1','S2','S3','S4','S5','s1','s2','s3','s4','s5','1S','2S','3S','4S','5S'].forEach(k=>{
-      if (obj && obj[k] !== undefined){
-        const texts = collectTexts(obj[k]);
-        const S = findS(k) || '';
-        for (const t of texts) results.push({ s: S, text: t, date: fallbackDate });
-      }
-    });
-
-    return results;
   }
 
   function parseRec(obj){
@@ -120,14 +88,11 @@
       s4: Number(rec.points.s4 || rec.points.S4 || rec.points['4S'] || 0),
       s5: Number(rec.points.s5 || rec.points.S5 || rec.points['5S'] || 0)
     };
-
-    // NOTE: deep scan super-robusto
-    rec.notes = deepExtractNotes(obj, rec.date);
-
+    rec.notes = parseNotesFlexible(obj.notes, rec.date);
     return rec;
   }
 
-  // ---------------- Import / Export / PIN ----------------
+  // -------- Import/Export/PIN --------
   async function handleImport(files){
     if (!files || !files.length) return;
     const current = store.load();
@@ -138,17 +103,16 @@
         const txt = await f.text();
         const obj = JSON.parse(txt);
         const rec = parseRec(obj);
-        if (!rec.channel) throw new Error('CH mancante');
+        if (!rec.channel) throw new Error('CH mancante in '+f.name);
         byKey.set(rec.area + '|' + rec.channel + '|' + rec.date, rec);
       }catch(e){
         console.error('[import]', f.name, e);
         alert('Errore file: ' + f.name);
       }
     }
-
     const merged = Array.from(byKey.values()).sort((a,b)=> new Date(a.date)-new Date(b.date));
     store.save(merged);
-    render(); // aggiorna pagina corrente
+    render();
   }
 
   function exportAll(){
@@ -190,10 +154,9 @@
     };
   }
 
-  // ---------------- HOME (invariata) ----------------
+  // -------- Home --------
   function renderHome(){
     const wrap = $('#board-all'); if (!wrap) return;
-
     renderDelays();
 
     const data = store.load();
@@ -238,7 +201,7 @@
     });
   }
 
-  // ---------------- Ritardi (invariato) ----------------
+  // -------- Ritardi --------
   function renderDelays(){
     const box = $('#delay-section'); if (!box) return;
     const list = $('#delay-list');
@@ -273,7 +236,7 @@
     }
   }
 
-  // ---------------- Stampa scheda singola (invariato) ----------------
+  // -------- Stampa scheda --------
   function printCard(card){
     const w = window.open('', '_blank');
     w.document.write(`<title>Stampa CH</title><style>
@@ -291,10 +254,9 @@
     w.document.close(); w.focus(); w.print(); setTimeout(()=>w.close(),100);
   }
 
-  // ---------------- Checklist (invariata) ----------------
+  // -------- Checklist --------
   function renderChecklist(){
     const wrap = $('#cards'); if (!wrap) return;
-
     const data = store.load();
     wrap.innerHTML = '';
 
@@ -371,23 +333,68 @@
     $('#btn-print-all')?.addEventListener('click', () => window.print());
   }
 
-  // ---------------- Evidenzia note da query (invariato) ----------------
+  // -------- Notes --------
   function renderNotes(){
     const box = $('#notes-list'); if (!box) return;
-    const qs = new URLSearchParams(location.search);
-    const hlCh = qs.get('hlCh') ? decodeURIComponent(qs.get('hlCh')) : '';
-    if (!hlCh) return;
 
-    setTimeout(()=>{
-      $$('#notes-list .note').forEach(n=>{
-        if (n.textContent.includes(hlCh)){
-          n.style.boxShadow = '0 0 0 3px rgba(255,0,0,.35) inset';
-        }
-      });
-    }, 120);
+    const rows = [];
+    for (const r of store.load()){
+      for (const n of (r.notes || [])){
+        rows.push({
+          ch:   r.channel,
+          area: r.area,
+          s:    n.s,
+          text: n.text,
+          date: n.date || r.date
+        });
+      }
+    }
+
+    // accetta 'all', 'Tutti' o vuoto
+    let typeVal = $('#f-type')?.value || 'all';
+    if (/^tutti$/i.test(typeVal) || typeVal==='') typeVal = 'all';
+
+    const fromVal = $('#f-from')?.value || '';
+    const toVal   = $('#f-to')?.value   || '';
+    const chVal   = ($('#f-ch')?.value  || '').trim().toLowerCase();
+
+    const inRange = (d) => {
+      const t = new Date(d).getTime();
+      if (fromVal && t < new Date(fromVal).getTime()) return false;
+      if (toVal   && t > new Date(toVal).getTime()+86400000-1) return false;
+      return true;
+    };
+
+    const list = rows
+      .filter(r => (typeVal==='all' ? true : r.area===typeVal))
+      .filter(r => (!chVal ? true : ((''+r.ch).toLowerCase().includes(chVal))))
+      .filter(r => inRange(r.date))
+      .sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+    box.innerHTML = '';
+    if (!list.length){
+      box.innerHTML = '<div class="muted">Nessuna nota con i filtri selezionati.</div>';
+      return;
+    }
+
+    for (const n of list){
+      const S = (n.s||'').toString().match(/[1-5]/)?.[0] || '';
+      const el = document.createElement('div');
+      el.className = 'note';
+      el.innerHTML = `
+        <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
+          <div><strong>${n.ch}</strong>
+            ${S ? ` • <span class="pill s${S}">S${S}</span>` : ''}
+            <span class="chip">${n.area||''}</span>
+          </div>
+          <div class="muted">${n.date||''}</div>
+        </div>
+        <div style="margin-top:.45rem;white-space:pre-wrap">${n.text||''}</div>`;
+      box.appendChild(el);
+    }
   }
 
-  // ---------------- Binder comune ----------------
+  // -------- Binder --------
   function initCommon(){
     $('#btn-import')?.addEventListener('click', () => $('#import-input')?.click());
     $('#import-input')?.addEventListener('change', (e) => handleImport(e.target.files));
@@ -395,20 +402,18 @@
     $('#btn-export')?.addEventListener('click', exportAll);
     $('#btn-export-supervisor')?.addEventListener('click', exportAll);
 
-    const btnNotes = $('#btn-notes');
-    if (btnNotes && btnNotes.tagName !== 'A'){
-      btnNotes.addEventListener('click', () => { location.href = 'notes.html'; });
-    }
+    // Apri sempre la pagina Note (cache-buster contro SW)
+    $('#btn-notes')?.addEventListener('click', () => {
+      location.href = 'notes.html?v=' + Date.now();
+    });
   }
 
-  // ---------------- Dispatcher ----------------
   function render(){
     renderHome();
     renderChecklist();
     renderNotes();
   }
 
-  // ---------------- Boot ----------------
   window.addEventListener('DOMContentLoaded', () => {
     initCommon();
     initLock();
