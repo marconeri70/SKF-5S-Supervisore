@@ -118,3 +118,49 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .l4 i, .s4 { background: var(--s4, #34c759); }
 .l5 i, .s5 { background: var(--s5, #0a84ff); }
 
+/* Grafico 5S verticale allineato */
+.chart5s{
+  display:flex;
+  align-items:flex-end;
+  gap:14px;
+  height:120px;               /* altezza area grafico */
+}
+.chart5s .col{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:34px;                 /* larghezza colonna uniforme */
+}
+.chart5s .colbar{
+  width:100%;
+  border-radius:10px 10px 0 0;
+  background:#e9eef5;
+  position:relative;
+}
+.chart5s .colcap{
+  font-size:.8rem;
+  margin-top:6px;
+  color:#2a2f3a;
+}
+.colbar.l1{ background: var(--s1); }
+.colbar.l2{ background: var(--s2); }
+.colbar.l3{ background: var(--s3); }
+.colbar.l4{ background: var(--s4); }
+.colbar.l5{ background: var(--s5); }
+
+/* Card compatta nelle checklist */
+.card-line.compact .chart5s{ display:none; }
+
+/* Evidenza nota mirata */
+.note-hl{
+  outline: 3px solid #ff8a8a;
+  background:#fff3f3;
+  border-radius:12px;
+  padding:6px;
+}
+
+/* Ritardi */
+#delay-section .btn.tiny{ padding:.2rem .6rem; font-size:.8rem; }
+
+/* Migliora visibilità label % nelle mini board home */
+.board-mini .colcap span{ font-weight:700; }
