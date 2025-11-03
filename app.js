@@ -1,9 +1,10 @@
-// SKF 5S Supervisor — v2.4.6 (Note open/filtro + grafici checklist)
-// Mantiene tutto il resto invariato.
+<script>
+// SKF 5S Supervisor — v2.4.1 fix grafici + “vedi note” mirato + grafici nelle card checklist
 
 (() => {
   const STORAGE_KEY = 'skf5s:supervisor:data';
   const PIN_KEY     = 'skf5s:pin';
+
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
@@ -15,65 +16,45 @@
     save(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
   };
 
-  const fmtPercent = v => `${Math.round(Number(v)||0)}%`;
-  const mean = p => Math.round(((+p.s1||0)+(+p.s2||0)+(+p.s3||0)+(+p.s4||0)+(+p.s5||0))/5);
+  const fmtPct = v => `${Math.round(Number(v)||0)}%`;
+  const mean   = p => Math.round(((+p.s1||0)+(+p.s2||0)+(+p.s3||0)+(+p.s4||0)+(+p.s5||0))/5);
 
-  // --- NOTES parser (supporta notes.{s1..s5} string/array) ---
+  // ------- NOTE parser (flessibile) -------
   function parseNotesFlexible(src, fallbackDate){
     const out = [];
     if (!src) return out;
 
-    const pushLines = (S, val) => {
-      if (val == null) return;
-      if (typeof val === 'string'){
-        val.split(/\n+/).forEach(line=>{
-          const t = line.trim();
-          if (t) out.push({ s:S.toUpperCase(), text:t, date:fallbackDate });
-        });
-      } else if (Array.isArray(val)){
-        val.forEach(x=>{
-          const t = String(x ?? '').trim();
-          if (t) out.push({ s:S.toUpperCase(), text:t, date:fallbackDate });
-        });
-      }
-    };
-
-    if (typeof src === 'object' && !Array.isArray(src)){
-      for (const [k, v] of Object.entries(src)){
-        const m = String(k).match(/^(?:s|S)?\s*([1-5])$|^([1-5])\s*S$/);
-        if (m){
-          const n = m[1] || m[2];
-          pushLines('S'+n, v);
-        }
-      }
-      return out;
-    }
     if (Array.isArray(src)){
       for (const n of src){
         if (!n) continue;
-        if (typeof n === 'string'){
-          const t = n.trim();
-          if (t) out.push({ s:'', text:t, date:fallbackDate });
-        } else if (typeof n === 'object'){
-          const s = (n.s || n.S || n.type || '').toString().toUpperCase();
-          const text = (n.text || n.note || '').toString();
-          if (text.trim()){
-            out.push({ s, text, date:(n.date || fallbackDate) });
-          }
-        }
+        out.push({
+          s:    n.s || n.S || n.type || '',
+          text: n.text || n.note || '',
+          date: n.date || fallbackDate
+        });
       }
       return out;
     }
-    if (typeof src === 'string' && src.trim()){
-      src.split(/\n+/).forEach(line=>{
-        const t = line.trim();
-        if (t) out.push({ s:'', text:t, date:fallbackDate });
-      });
+    if (typeof src === 'object'){
+      for (const k of Object.keys(src)){
+        const val = src[k];
+        if (typeof val === 'string' && val.trim()){
+          for (const line of val.split(/\n+/)){
+            const t = line.trim();
+            if (t) out.push({ s:k, text:t, date:fallbackDate });
+          }
+        } else if (Array.isArray(val)){
+          for (const line of val){
+            const t = String(line||'').trim();
+            if (t) out.push({ s:k, text:t, date:fallbackDate });
+          }
+        }
+      }
     }
     return out;
   }
 
-  function parseRec(obj){
+  function parseRecord(obj){
     const rec = {
       area:    obj.area || '',
       channel: obj.channel || obj.CH || obj.ch || '',
@@ -89,10 +70,20 @@
       s5: Number(rec.points.s5 || rec.points.S5 || rec.points['5S'] || 0)
     };
     rec.notes = parseNotesFlexible(obj.notes, rec.date);
+
+    for (const k of Object.keys(obj||{})){
+      if (/^S[1-5]$/i.test(k) && Array.isArray(obj[k])){
+        for (const line of obj[k]){
+          const t = String(line||'').trim();
+          if (t) rec.notes.push({ s:k, text:t, date:rec.date });
+        }
+      }
+    }
+
     return rec;
   }
 
-  // -------- Import/Export/PIN --------
+  // ------- Import multiplo -------
   async function handleImport(files){
     if (!files || !files.length) return;
     const current = store.load();
@@ -102,8 +93,8 @@
       try{
         const txt = await f.text();
         const obj = JSON.parse(txt);
-        const rec = parseRec(obj);
-        if (!rec.channel) throw new Error('CH mancante in '+f.name);
+        const rec = parseRecord(obj);
+        if (!rec.channel) throw new Error('CH mancante');
         byKey.set(rec.area + '|' + rec.channel + '|' + rec.date, rec);
       }catch(e){
         console.error('[import]', f.name, e);
@@ -115,6 +106,7 @@
     render();
   }
 
+  // ------- Export (PIN) -------
   function exportAll(){
     const pinSaved = localStorage.getItem(PIN_KEY);
     const ask = prompt('Inserisci PIN (demo 1234):', '');
@@ -128,6 +120,7 @@
     a.click();
   }
 
+  // ------- Lock PIN -------
   function initLock(){
     const btn = $('#btn-lock'); if (!btn) return;
     const paint = () => {
@@ -144,22 +137,73 @@
         const n1 = prompt('Nuovo PIN (4-10 cifre):'); if (!n1) return;
         const n2 = prompt('Conferma nuovo PIN:');     if (n2 !== n1){ alert('Non coincide'); return; }
         localStorage.setItem(PIN_KEY, n1);
-        alert('PIN aggiornato.');
-        paint();
+        alert('PIN aggiornato.'); paint();
       } else {
         const n1 = prompt('Imposta PIN (demo 1234):'); if (!n1) return;
-        localStorage.setItem(PIN_KEY, n1);
-        paint();
+        localStorage.setItem(PIN_KEY, n1); paint();
       }
     };
   }
 
-  // -------- Home --------
+  // ============================
+  // HOME
+  // - sezione ritardi: “Vedi note” apre SOLO quel CH
+  // - grafici orizzontali con colonne verticali allineate alle etichette
+  // ============================
+  function renderDelays(){
+    const box = $('#delay-section'); if (!box) return;
+    const data = store.load();
+
+    // ultimo record per CH
+    const lastByCh = new Map();
+    for (const r of data){
+      const list = lastByCh.get(r.channel) || [];
+      list.push(r);
+      lastByCh.set(r.channel, list);
+    }
+    const now = Date.now();
+    const delays = [];
+    for (const [ch, list] of lastByCh.entries()){
+      const last = list.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
+      const days = Math.floor((now - new Date(last.date).getTime()) / 86400000);
+      if (days > 7){
+        delays.push({ ch, area:last.area, date:last.date, days });
+      }
+    }
+    if (!delays.length){ box.style.display='none'; return; }
+    box.style.display='block';
+
+    box.querySelector('.delay-list').innerHTML = delays
+      .sort((a,b)=> b.days - a.days)
+      .map(d => `
+        <li>
+          <strong>${d.ch}</strong> — <span class="chip">${d.area||''}</span>
+          <span class="muted"> ${d.days} giorni di ritardo</span>
+          <button class="btn tiny outline go-card" data-ch="${d.ch}">Vai alla scheda</button>
+          <button class="btn tiny go-notes" data-ch="${d.ch}" data-date="${d.date}">Vedi note</button>
+        </li>
+      `).join('');
+
+    // link: solo CH richiesto
+    $$('.go-notes', box).forEach(b=>{
+      b.onclick = () => {
+        const ch = b.dataset.ch;
+        const date = b.dataset.date || '';
+        location.href = `notes.html?hlCh=${encodeURIComponent(ch)}${date ? `&hlDate=${encodeURIComponent(date)}`:''}`;
+      };
+    });
+    $$('.go-card', box).forEach(b=>{
+      b.onclick = () => {
+        const ch = b.dataset.ch;
+        location.href = `checklist.html?hlCh=${encodeURIComponent(ch)}`;
+      };
+    });
+  }
+
   function renderHome(){
     const wrap = $('#board-all'); if (!wrap) return;
-    renderDelays();
-
     const data = store.load();
+
     const activeType = $('.segmented .seg.on')?.dataset.type || 'all';
     const filt = (r) => activeType==='all' ? true : (r.area===activeType);
 
@@ -170,73 +214,52 @@
     }
 
     wrap.innerHTML = '';
+    const chips = $('#chip-strip'); if (chips) chips.innerHTML = '';
+
     for (const [ch, arr] of Array.from(byCh.entries()).sort()){
       const last = arr.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
       const p = last?.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
 
       const card = document.createElement('div');
-      card.className = 'board';
+      card.className = 'board-mini';
       card.innerHTML = `
-        <h4 style="margin:0 0 6px 0;display:flex;justify-content:space-between;gap:8px">
-          <span>${ch}</span><span class="muted">${last?.area||''}</span>
-        </h4>
-        <div class="vbars">
-          <div class="vbar l1"><i style="height:${p.s1}%"></i><span class="pct">${fmtPercent(p.s1)}</span></div>
-          <div class="vbar l2"><i style="height:${p.s2}%"></i><span class="pct">${fmtPercent(p.s2)}</span></div>
-          <div class="vbar l3"><i style="height:${p.s3}%"></i><span class="pct">${fmtPercent(p.s3)}</span></div>
-          <div class="vbar l4"><i style="height:${p.s4}%"></i><span class="pct">${fmtPercent(p.s4)}</span></div>
-          <div class="vbar l5"><i style="height:${p.s5}%"></i><span class="pct">${fmtPercent(p.s5)}</span></div>
+        <div class="bm-top">
+          <div class="bm-title">${ch} <span class="muted">${last?.area||''}</span></div>
         </div>
-        <div class="vlabel">1S • 2S • 3S • 4S • 5S</div>
-        <button class="btn big" style="margin-top:8px"
-          onclick="location.href='checklist.html?hlCh=${encodeURIComponent(ch)}#${encodeURIComponent(ch)}'">
-          Apri scheda
-        </button>
-      `;
+        <div class="chart5s" aria-hidden="false">
+          ${[['1S','l1','s1'],['2S','l2','s2'],['3S','l3','s3'],['4S','l4','s4'],['5S','l5','s5']]
+            .map(([lbl,cls,key]) => `
+              <div class="col">
+                <div class="colbar ${cls}" style="height:${p[key]}%"></div>
+                <div class="colcap">${lbl} <span>${fmtPct(p[key])}</span></div>
+              </div>`).join('')}
+        </div>
+        <div class="bm-actions">
+          <button class="btn link open-card">Apri scheda</button>
+        </div>`;
       wrap.appendChild(card);
+
+      card.querySelector('.open-card').onclick = () => location.href = 'checklist.html#' + encodeURIComponent(ch);
+
+      const chip = document.createElement('button');
+      chip.className = 'chip';
+      chip.textContent = ch;
+      chip.onclick = () => location.href = 'checklist.html#' + encodeURIComponent(ch);
+      chips?.appendChild(chip);
     }
 
+    // toggle tipo
     $$('.segmented .seg').forEach(b=>{
       b.onclick = () => { $$('.segmented .seg').forEach(x=>x.classList.remove('on')); b.classList.add('on'); renderHome(); };
     });
   }
 
-  // -------- Ritardi --------
-  function renderDelays(){
-    const box = $('#delay-section'); if (!box) return;
-    const list = $('#delay-list');
-    const data = store.load();
-    const today = Date.now();
-    const delayed = [];
-
-    const byCh = new Map();
-    for (const r of data){
-      const k = r.channel || 'CH?';
-      (byCh.get(k) || byCh.set(k, []).get(k)).push(r);
-    }
-    for (const [ch, arr] of byCh){
-      const last = arr.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
-      const days = Math.floor((today - new Date(last.date).getTime())/86400000);
-      if (days > 7) delayed.push({ch, area:last.area||'', days, last:last.date});
-    }
-
-    if (!delayed.length){ box.hidden = true; return; }
-    box.hidden = false;
-    list.innerHTML = '';
-    for (const d of delayed.sort((a,b)=> b.days-a.days)){
-      const li = document.createElement('li');
-      const qs = new URLSearchParams({ hlCh: d.ch, hlDate: d.last });
-      li.innerHTML = `
-        <strong>${d.ch}</strong> — <span class="chip">${d.area||''}</span>
-        <span class="muted">${d.days} giorni di ritardo</span>
-        <button class="btn tiny outline" onclick="location.href='checklist.html?${qs.toString()}#${encodeURIComponent(d.ch)}'">Vai alla scheda</button>
-        <button class="btn tiny" onclick="location.href='notes.html?${qs.toString()}'">Vedi note</button>
-      `;
-      list.appendChild(li);
-    }
-  }
-
-  // -------- Stampa scheda --------
+  // ============================
+  // CHECKLIST
+  // - grafici nelle card
+  // - “Vedi note” apre SOLO quel CH
+  // - supporto hlCh per filtrare lista a singola card
+  // ============================
   function printCard(card){
     const w = window.open('', '_blank');
     w.document.write(`<title>Stampa CH</title><style>
@@ -250,19 +273,17 @@
       .bar{height:14px;border-radius:7px;background:#eee;margin:10px 0;position:relative}
       .bar i{position:absolute;left:0;top:0;height:100%;border-radius:7px}
     </style>`);
-    w.document.write(card.innerHTML.replaceAll('vbars','').replaceAll('vbar','bar'));
+    w.document.write(card.innerHTML.replaceAll('chart5s','').replaceAll('colbar','bar').replaceAll('col','div'));
     w.document.close(); w.focus(); w.print(); setTimeout(()=>w.close(),100);
   }
 
-  // -------- Checklist --------
   function renderChecklist(){
     const wrap = $('#cards'); if (!wrap) return;
     const data = store.load();
     wrap.innerHTML = '';
 
-    const qs = new URLSearchParams(location.search);
-    const hlCh = qs.get('hlCh') ? decodeURIComponent(qs.get('hlCh')) : '';
-    const hash = decodeURIComponent(location.hash.slice(1) || '');
+    const onlyCh = new URLSearchParams(location.search).get('hlCh');
+    const hash   = decodeURIComponent(location.hash.slice(1) || '');
 
     const byCh = new Map();
     for (const r of data){
@@ -270,8 +291,11 @@
       (byCh.get(key) || byCh.set(key, []).get(key)).push(r);
     }
 
-    for (const [ch, arr] of Array.from(byCh.entries()).sort()){
-      if (hash && ch !== hash) continue;
+    const entries = Array.from(byCh.entries()).sort();
+    for (const [ch, arr] of entries){
+      if (onlyCh && ch !== onlyCh) continue;
+      if (hash   && ch !== hash)   continue;
+
       const last = arr.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
       const p = last?.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
 
@@ -281,46 +305,42 @@
       card.innerHTML = `
         <div class="top">
           <div>
-            <div style="font-weight:800">CH ${ch.replace(/^CH\\s*/,'')}</div>
+            <div class="cl-title">CH ${ch.replace(/^CH\\s*/,'')}</div>
             <div class="muted" style="font-size:.9rem">${last?.area||''} • Ultimo: ${last?.date||'-'}</div>
           </div>
           <div class="pills">
-            <span class="pill s1">S1 ${fmtPercent(p.s1)}</span>
-            <span class="pill s2">S2 ${fmtPercent(p.s2)}</span>
-            <span class="pill s3">S3 ${fmtPercent(p.s3)}</span>
-            <span class="pill s4">S4 ${fmtPercent(p.s4)}</span>
-            <span class="pill s5">S5 ${fmtPercent(p.s5)}</span>
-            <span class="pill" style="background:#eef5ff;color:#0b3b8f">Voto medio ${fmtPercent(mean(p))}</span>
+            <span class="pill s1">S1 ${fmtPct(p.s1)}</span>
+            <span class="pill s2">S2 ${fmtPct(p.s2)}</span>
+            <span class="pill s3">S3 ${fmtPct(p.s3)}</span>
+            <span class="pill s4">S4 ${fmtPct(p.s4)}</span>
+            <span class="pill s5">S5 ${fmtPct(p.s5)}</span>
+            <span class="pill" style="background:#eef5ff;color:#0b3b8f">Voto medio ${fmtPct(mean(p))}</span>
           </div>
-          <div style="display:flex;gap:.5rem;align-items:center">
+          <div class="buttons">
             <button class="btn outline btn-print">Stampa PDF</button>
             <button class="btn outline btn-toggle">Comprimi/Espandi</button>
-            <button class="btn" data-note="${encodeURIComponent(ch)}">Vedi note</button>
+            <button class="btn link btn-notes">Vedi note</button>
           </div>
         </div>
-        <div class="bars">
-          <div class="bar"><i class="l1" style="width:${p.s1}%"></i><span class="lbl">1S</span></div>
-          <div class="bar"><i class="l2" style="width:${p.s2}%"></i><span class="lbl">2S</span></div>
-          <div class="bar"><i class="l3" style="width:${p.s3}%"></i><span class="lbl">3S</span></div>
-          <div class="bar"><i class="l4" style="width:${p.s4}%"></i><span class="lbl">4S</span></div>
-          <div class="bar"><i class="l5" style="width:${p.s5}%"></i><span class="lbl">5S</span></div>
+        <div class="chart5s mt">
+          ${[['1S','l1','s1'],['2S','l2','s2'],['3S','l3','s3'],['4S','l4','s4'],['5S','l5','s5']]
+            .map(([lbl,cls,key]) => `
+              <div class="col">
+                <div class="colbar ${cls}" style="height:${p[key]}%"></div>
+                <div class="colcap">${lbl}</div>
+              </div>`).join('')}
         </div>`;
       wrap.appendChild(card);
 
       card.querySelector('.btn-print').onclick  = () => printCard(card);
       card.querySelector('.btn-toggle').onclick = () => card.classList.toggle('compact');
-      card.querySelector('[data-note]')?.addEventListener('click', (e)=>{
-        const chEnc = e.currentTarget.getAttribute('data-note');
-        const params = new URLSearchParams({ hlCh: chEnc });
-        location.href = `notes.html?${params.toString()}`;
-      });
-
-      if (hlCh && ch === hlCh){
-        card.classList.add('hl');
-        setTimeout(()=> card.scrollIntoView({behavior:'smooth', block:'center'}), 50);
-      }
+      card.querySelector('.btn-notes').onclick  = () => {
+        const lastDate = last?.date || '';
+        location.href = `notes.html?hlCh=${encodeURIComponent(ch)}${lastDate ? `&hlDate=${encodeURIComponent(lastDate)}`:''}`;
+      };
     }
 
+    // pulsante “Comprimi/Espandi TUTTI”
     const toggleAll = $('#btn-toggle-all');
     if (toggleAll){
       let compact = false;
@@ -333,7 +353,9 @@
     $('#btn-print-all')?.addEventListener('click', () => window.print());
   }
 
-  // -------- Notes --------
+  // ============================
+  // NOTE: on-demand filter via hlCh/hlDate
+  // ============================
   function renderNotes(){
     const box = $('#notes-list'); if (!box) return;
 
@@ -350,13 +372,14 @@
       }
     }
 
-    // accetta 'all', 'Tutti' o vuoto
-    let typeVal = $('#f-type')?.value || 'all';
-    if (/^tutti$/i.test(typeVal) || typeVal==='') typeVal = 'all';
+    const URLP   = new URLSearchParams(location.search);
+    const hlCh   = URLP.get('hlCh') || '';
+    const hlDate = URLP.get('hlDate') || '';
 
+    const typeVal = $('#f-type')?.value || 'all';
     const fromVal = $('#f-from')?.value || '';
     const toVal   = $('#f-to')?.value   || '';
-    const chVal   = ($('#f-ch')?.value  || '').trim().toLowerCase();
+    const chVal   = (hlCh || ($('#f-ch')?.value || '')).trim().toLowerCase();
 
     const inRange = (d) => {
       const t = new Date(d).getTime();
@@ -372,29 +395,38 @@
       .sort((a,b)=> new Date(b.date) - new Date(a.date));
 
     box.innerHTML = '';
+    if ($('#notes-count'))   $('#notes-count').textContent   = `(${list.length})`;
+    if ($('#notes-counter')) $('#notes-counter').textContent = `${list.length} note`;
+
     if (!list.length){
       box.innerHTML = '<div class="muted">Nessuna nota con i filtri selezionati.</div>';
       return;
     }
 
     for (const n of list){
-      const S = (n.s||'').toString().match(/[1-5]/)?.[0] || '';
+      const S = (n.s||'').toString().match(/[1-5]/)?.[0] || '1';
       const el = document.createElement('div');
       el.className = 'note';
+      if (hlCh && n.ch === hlCh && (!hlDate || n.date === hlDate)){
+        el.classList.add('note-hl');     // resta evidenziata
+      }
       el.innerHTML = `
         <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
-          <div><strong>${n.ch}</strong>
-            ${S ? ` • <span class="pill s${S}">S${S}</span>` : ''}
-            <span class="chip">${n.area||''}</span>
-          </div>
+          <div><strong>${n.ch}</strong> • <span class="pill s${S}">S${S}</span> <span class="chip">${n.area||''}</span></div>
           <div class="muted">${n.date||''}</div>
         </div>
         <div style="margin-top:.45rem;white-space:pre-wrap">${n.text||''}</div>`;
       box.appendChild(el);
     }
+
+    // se arrivo con hlCh, porto in alto la prima evidenziata
+    if (hlCh){
+      const target = $('.note-hl');
+      if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+    }
   }
 
-  // -------- Binder --------
+  // ------- Bind comuni -------
   function initCommon(){
     $('#btn-import')?.addEventListener('click', () => $('#import-input')?.click());
     $('#import-input')?.addEventListener('change', (e) => handleImport(e.target.files));
@@ -402,24 +434,37 @@
     $('#btn-export')?.addEventListener('click', exportAll);
     $('#btn-export-supervisor')?.addEventListener('click', exportAll);
 
-    // Apri sempre la pagina Note (cache-buster contro SW)
     $('#btn-notes')?.addEventListener('click', () => {
-      location.href = 'notes.html?v=' + Date.now();
+      location.href = 'notes.html';
+    });
+
+    $('#f-apply')?.addEventListener('click', renderNotes);
+    $('#f-clear')?.addEventListener('click', () => {
+      if ($('#f-type')) $('#f-type').value = 'all';
+      if ($('#f-from')) $('#f-from').value = '';
+      if ($('#f-to'))   $('#f-to').value   = '';
+      if ($('#f-ch'))   $('#f-ch').value   = '';
+      renderNotes();
     });
   }
 
+  // ------- Dispatcher -------
   function render(){
+    renderDelays();
     renderHome();
     renderChecklist();
     renderNotes();
   }
 
+  // ------- Boot -------
   window.addEventListener('DOMContentLoaded', () => {
     initCommon();
     initLock();
     render();
-    if ('serviceWorker' in navigator){
-      navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('[SW register]', err));
     }
   });
 })();
+</script>
