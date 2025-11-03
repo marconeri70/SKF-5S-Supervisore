@@ -1,6 +1,5 @@
 <script>
-// SKF 5S Supervisor — v2.4.1 fix grafici + “vedi note” mirato + grafici nelle card checklist
-
+// SKF 5S Supervisor — v2.4.3 (fix: note import, grafici allineati, ritardi e link mirati)
 (() => {
   const STORAGE_KEY = 'skf5s:supervisor:data';
   const PIN_KEY     = 'skf5s:pin';
@@ -19,7 +18,7 @@
   const fmtPct = v => `${Math.round(Number(v)||0)}%`;
   const mean   = p => Math.round(((+p.s1||0)+(+p.s2||0)+(+p.s3||0)+(+p.s4||0)+(+p.s5||0))/5);
 
-  // ------- NOTE parser (flessibile) -------
+  // --- NOTE parser flessibile ---
   function parseNotesFlexible(src, fallbackDate){
     const out = [];
     if (!src) return out;
@@ -71,6 +70,7 @@
     };
     rec.notes = parseNotesFlexible(obj.notes, rec.date);
 
+    // fallback: S1..S5 come array in root
     for (const k of Object.keys(obj||{})){
       if (/^S[1-5]$/i.test(k) && Array.isArray(obj[k])){
         for (const line of obj[k]){
@@ -79,11 +79,10 @@
         }
       }
     }
-
     return rec;
   }
 
-  // ------- Import multiplo -------
+  // --- Import multiplo ---
   async function handleImport(files){
     if (!files || !files.length) return;
     const current = store.load();
@@ -106,7 +105,7 @@
     render();
   }
 
-  // ------- Export (PIN) -------
+  // --- Export (PIN) ---
   function exportAll(){
     const pinSaved = localStorage.getItem(PIN_KEY);
     const ask = prompt('Inserisci PIN (demo 1234):', '');
@@ -120,7 +119,7 @@
     a.click();
   }
 
-  // ------- Lock PIN -------
+  // --- Lock PIN ---
   function initLock(){
     const btn = $('#btn-lock'); if (!btn) return;
     const paint = () => {
@@ -145,16 +144,11 @@
     };
   }
 
-  // ============================
-  // HOME
-  // - sezione ritardi: “Vedi note” apre SOLO quel CH
-  // - grafici orizzontali con colonne verticali allineate alle etichette
-  // ============================
+  // --- Ritardi (home) con link “Vai alla scheda / Vedi note” ---
   function renderDelays(){
     const box = $('#delay-section'); if (!box) return;
     const data = store.load();
 
-    // ultimo record per CH
     const lastByCh = new Map();
     for (const r of data){
       const list = lastByCh.get(r.channel) || [];
@@ -184,7 +178,6 @@
         </li>
       `).join('');
 
-    // link: solo CH richiesto
     $$('.go-notes', box).forEach(b=>{
       b.onclick = () => {
         const ch = b.dataset.ch;
@@ -200,6 +193,7 @@
     });
   }
 
+  // --- Home (mini board con colonne verticali) ---
   function renderHome(){
     const wrap = $('#board-all'); if (!wrap) return;
     const data = store.load();
@@ -230,7 +224,7 @@
           ${[['1S','l1','s1'],['2S','l2','s2'],['3S','l3','s3'],['4S','l4','s4'],['5S','l5','s5']]
             .map(([lbl,cls,key]) => `
               <div class="col">
-                <div class="colbar ${cls}" style="height:${p[key]}%"></div>
+                <div class="colbar ${cls}" style="height:${Number(p[key])||0}%"></div>
                 <div class="colcap">${lbl} <span>${fmtPct(p[key])}</span></div>
               </div>`).join('')}
         </div>
@@ -248,18 +242,12 @@
       chips?.appendChild(chip);
     }
 
-    // toggle tipo
     $$('.segmented .seg').forEach(b=>{
       b.onclick = () => { $$('.segmented .seg').forEach(x=>x.classList.remove('on')); b.classList.add('on'); renderHome(); };
     });
   }
 
-  // ============================
-  // CHECKLIST
-  // - grafici nelle card
-  // - “Vedi note” apre SOLO quel CH
-  // - supporto hlCh per filtrare lista a singola card
-  // ============================
+  // --- Stampa singola card ---
   function printCard(card){
     const w = window.open('', '_blank');
     w.document.write(`<title>Stampa CH</title><style>
@@ -277,6 +265,7 @@
     w.document.close(); w.focus(); w.print(); setTimeout(()=>w.close(),100);
   }
 
+  // --- Checklist (schede) ---
   function renderChecklist(){
     const wrap = $('#cards'); if (!wrap) return;
     const data = store.load();
@@ -322,12 +311,13 @@
             <button class="btn link btn-notes">Vedi note</button>
           </div>
         </div>
+
         <div class="chart5s mt">
           ${[['1S','l1','s1'],['2S','l2','s2'],['3S','l3','s3'],['4S','l4','s4'],['5S','l5','s5']]
             .map(([lbl,cls,key]) => `
               <div class="col">
-                <div class="colbar ${cls}" style="height:${p[key]}%"></div>
-                <div class="colcap">${lbl}</div>
+                <div class="colbar ${cls}" style="height:${Number(p[key])||0}%"></div>
+                <div class="colcap">${lbl} <span>${fmtPct(p[key])}</span></div>
               </div>`).join('')}
         </div>`;
       wrap.appendChild(card);
@@ -340,7 +330,6 @@
       };
     }
 
-    // pulsante “Comprimi/Espandi TUTTI”
     const toggleAll = $('#btn-toggle-all');
     if (toggleAll){
       let compact = false;
@@ -353,9 +342,7 @@
     $('#btn-print-all')?.addEventListener('click', () => window.print());
   }
 
-  // ============================
-  // NOTE: on-demand filter via hlCh/hlDate
-  // ============================
+  // --- NOTE (lista + filtri già in notes.html) ---
   function renderNotes(){
     const box = $('#notes-list'); if (!box) return;
 
@@ -372,14 +359,10 @@
       }
     }
 
-    const URLP   = new URLSearchParams(location.search);
-    const hlCh   = URLP.get('hlCh') || '';
-    const hlDate = URLP.get('hlDate') || '';
-
     const typeVal = $('#f-type')?.value || 'all';
     const fromVal = $('#f-from')?.value || '';
     const toVal   = $('#f-to')?.value   || '';
-    const chVal   = (hlCh || ($('#f-ch')?.value || '')).trim().toLowerCase();
+    const chVal   = ($('#f-ch')?.value  || '').trim().toLowerCase();
 
     const inRange = (d) => {
       const t = new Date(d).getTime();
@@ -407,9 +390,6 @@
       const S = (n.s||'').toString().match(/[1-5]/)?.[0] || '1';
       const el = document.createElement('div');
       el.className = 'note';
-      if (hlCh && n.ch === hlCh && (!hlDate || n.date === hlDate)){
-        el.classList.add('note-hl');     // resta evidenziata
-      }
       el.innerHTML = `
         <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
           <div><strong>${n.ch}</strong> • <span class="pill s${S}">S${S}</span> <span class="chip">${n.area||''}</span></div>
@@ -419,14 +399,26 @@
       box.appendChild(el);
     }
 
-    // se arrivo con hlCh, porto in alto la prima evidenziata
+    // Evidenziazione mirata da querystring (hlCh/hlDate)
+    const qp = new URLSearchParams(location.search);
+    const hlCh = qp.get('hlCh'); const hlDate = qp.get('hlDate');
     if (hlCh){
-      const target = $('.note-hl');
-      if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+      const notes = $$('.note', box);
+      notes.forEach(n => {
+        const head = n.querySelector('strong')?.textContent || '';
+        if (head === hlCh){
+          n.classList.add('highlight');
+          // resta evidenziato finché non si cambia filtro
+        }
+      });
+      if (hlDate){
+        // no-op: la data già è visibile; potresti anche scorrere verso la prima nota.
+        box.scrollIntoView({behavior:'smooth', block:'start'});
+      }
     }
   }
 
-  // ------- Bind comuni -------
+  // --- Bind comuni ---
   function initCommon(){
     $('#btn-import')?.addEventListener('click', () => $('#import-input')?.click());
     $('#import-input')?.addEventListener('change', (e) => handleImport(e.target.files));
@@ -434,10 +426,9 @@
     $('#btn-export')?.addEventListener('click', exportAll);
     $('#btn-export-supervisor')?.addEventListener('click', exportAll);
 
-    $('#btn-notes')?.addEventListener('click', () => {
-      location.href = 'notes.html';
-    });
+    $('#btn-notes')?.addEventListener('click', () => { location.href = 'notes.html'; });
 
+    // Filtri note (in notes.html)
     $('#f-apply')?.addEventListener('click', renderNotes);
     $('#f-clear')?.addEventListener('click', () => {
       if ($('#f-type')) $('#f-type').value = 'all';
@@ -448,20 +439,19 @@
     });
   }
 
-  // ------- Dispatcher -------
+  // --- Render dispatcher ---
   function render(){
-    renderDelays();
     renderHome();
     renderChecklist();
     renderNotes();
+    renderDelays();
   }
 
-  // ------- Boot -------
+  // --- Boot ---
   window.addEventListener('DOMContentLoaded', () => {
     initCommon();
     initLock();
     render();
-
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(err => console.warn('[SW register]', err));
     }
