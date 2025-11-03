@@ -95,3 +95,26 @@ body{margin:0;background:var(--bg);color:var(--ink);
   .actions{gap:6px}
   .btn{padding:8px 10px}
 }
+
+/* Testi sui grafici ben visibili */
+.vbars .pct,
+.bar .lbl { color:#1a1a1a; font-weight:600; }
+
+/* Grafici checklist sempre visibili */
+.card-line .bars { display:block; margin-top:.5rem; }
+.card-line.compact .bars { display:none; }
+
+.bar { position:relative; height:14px; border-radius:7px; background:#eef2f7; margin:8px 0; }
+.bar i { position:absolute; left:0; top:0; height:100%; border-radius:7px; }
+
+.vbars { display:flex; align-items:flex-end; gap:10px; height:120px; }
+.vbar { position:relative; width:18px; background:#eef2f7; border-radius:6px; height:100%; display:flex; align-items:flex-end; justify-content:center; }
+.vbar i { width:100%; border-radius:6px; }
+
+/* colori 5S (se non già definiti come --s1..--s5) */
+.l1 i, .s1 { background: var(--s1, #6d5efc); }
+.l2 i, .s2 { background: var(--s2, #ff3b30); }
+.l3 i, .s3 { background: var(--s3, #ff9f0a); }
+.l4 i, .s4 { background: var(--s4, #34c759); }
+.l5 i, .s5 { background: var(--s5, #0a84ff); }
+
