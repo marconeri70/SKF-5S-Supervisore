@@ -12,16 +12,25 @@
 <body data-page="checklist">
 <header class="appbar">
   <div class="brand">
+    <a href="index.html" class="btn back">← Home</a>
     <img src="assets/skf-logo.png" alt="SKF" class="brand-logo">
-    <span class="brand-title">SKF 5S</span>
-    <span class="brand-badge">Checklist</span>
+    <span class="brand-title">SKF 5S</span><span class="brand-badge">Checklist</span>
   </div>
   <nav class="actions">
-    <a href="index.html" class="btn">← Home</a>
     <button id="btn-toggle-all" class="btn outline">Comprimi/Espandi TUTTI</button>
     <button id="btn-print-all" class="btn outline">Stampa tutti</button>
+    <button id="btn-notes" class="btn ghost">Note</button>
+    <button id="btn-import" class="btn primary">Importa</button>
+    <input id="import-input" type="file" accept="application/json,.json" multiple hidden>
   </nav>
 </header>
+
+<main class="container">
+  <div id="cards"></div>
+</main>
+
+<footer class="safe-bottom"><div class="version">v2.4.1</div></footer>
+<script src="app.js"></script>
 
 <main class="container">
   <section id="cards"></section>
