@@ -81,14 +81,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 #delay-section .delay-list li{border:1px solid #ffd6d6;border-radius:10px;padding:8px 10px;background:#fff;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 
 /* Checklist */
-#cards{display:flex;flex-direction:column;gap:12px}
-.card-line{background:#fff;border:1px solid var(--ring);border-radius:14px;padding:12px}
-.card-line.compact .chart5s{display:none}
-.card-line.compact .pills{display:none}
-.card-line.hl{box-shadow:0 0 0 3px var(--hl) inset}
-.top{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.cl-title{font-weight:800}
-.pills{display:flex;gap:6px;flex-wrap:wrap}
+.card-line.hl{box-shadow:0 0 0 3px #ffb3b3 inset}
+.chart5s{display:flex;gap:12px;align-items:flex-end;min-height:160px}
+.chart5s .col{width:46px;display:flex;flex-direction:column;align-items:center}
+.chart5s .colbar{width:100%;border-radius:8px 8px 0 0;background:#dfe6f4}
+.chart5s .colcap{font-size:.82rem;margin-top:6px;text-align:center;color:#152238}
+.chart5s .colcap span{display:block;font-weight:700}
 
 /* Note */
 .note{background:#fff;border:1px solid var(--ring);border-radius:12px;padding:10px}
