@@ -57,16 +57,29 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 /* Grafico 5S verticale (home e schede) */
 .chart5s{display:flex;gap:12px;align-items:flex-end;min-height:160px}
 .chart5s .col{width:46px;display:flex;flex-direction:column;align-items:center}
-.chart5s .colbar{width:100%;border-radius:8px 8px 0 0;background:#dfe6f4}
+
+/* Traccia della colonna (grigio chiaro) */
+.chart5s .colbar{
+  width:100%;
+  border-radius:8px 8px 0 0;
+  background:#e9eef8;          /* traccia visibile */
+  position:relative;
+  min-height:2px;
+}
+
+/* Colori colonne — specificità più alta per sovrascrivere la traccia */
+.chart5s .colbar.l1{ background:var(--s1) }
+.chart5s .colbar.l2{ background:var(--s2) }
+.chart5s .colbar.l3{ background:var(--s3) }
+.chart5s .colbar.l4{ background:var(--s4) }
+.chart5s .colbar.l5{ background:var(--s5) }
+
 .chart5s .colcap{font-size:.82rem;margin-top:6px;text-align:center;color:var(--ink)}
 .chart5s .colcap span{display:block;font-weight:700}
 
-/* Colori colonne */
-.l1{background:var(--s1)} .l2{background:var(--s2)} .l3{background:var(--s3)} .l4{background:var(--s4)} .l5{background:var(--s5)}
-
 /* legenda */
 .legend5s{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.legend5s .dot{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--muted)}
+.legend5s .dot{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#0f1b2d}
 .legend5s .dot::before{content:'';width:12px;height:12px;border-radius:999px;display:inline-block}
 .legend5s .s1::before{background:var(--s1)} .legend5s .s2::before{background:var(--s2)}
 .legend5s .s3::before{background:var(--s3)} .legend5s .s4::before{background:var(--s4)} .legend5s .s5::before{background:var(--s5)}
