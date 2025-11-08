@@ -1,53 +1,39 @@
-// SKF 5S Supervisor — v2.4.5 fix grafici + link/HL
+// SKF 5S Supervisor — v2.5.0 (stabile)
 (() => {
   const STORAGE_KEY = 'skf5s:supervisor:data';
   const PIN_KEY     = 'skf5s:pin';
-
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  const qs = new URLSearchParams(location.search);
 
-  // ---------------- Storage ----------------
+  // -------- Storage --------
   const store = {
-    load(){
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-      catch(e){ console.warn('[store.load]', e); return []; }
-    },
+    load(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+            catch(e){ console.warn('[store.load]', e); return []; } },
     save(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
   };
 
-  // ---------------- Helpers ----------------
+  // -------- Helpers --------
   const fmtP = v => `${Math.round(Number(v)||0)}%`;
   const mean = p => Math.round(((+p.s1||0)+(+p.s2||0)+(+p.s3||0)+(+p.s4||0)+(+p.s5||0))/5);
-  const qs   = new URLSearchParams(location.search);
 
   function parseNotesFlexible(src, fallbackDate){
     const out = [];
     if (!src) return out;
-
     if (Array.isArray(src)){
       for (const n of src){
         if (!n) continue;
-        out.push({
-          s:    n.s || n.S || n.type || '',
-          text: n.text || n.note || '',
-          date: n.date || fallbackDate
-        });
+        out.push({ s: n.s||n.S||n.type||'', text: n.text||n.note||'', date: n.date||fallbackDate });
       }
       return out;
     }
     if (typeof src === 'object'){
       for (const k of Object.keys(src)){
-        const val = src[k];
-        if (typeof val === 'string' && val.trim()){
-          for (const line of val.split(/\n+/)){
-            const t = line.trim();
-            if (t) out.push({ s:k, text:t, date:fallbackDate });
-          }
-        } else if (Array.isArray(val)){
-          for (const line of val){
-            const t = String(line||'').trim();
-            if (t) out.push({ s:k, text:t, date:fallbackDate });
-          }
+        const v = src[k];
+        if (typeof v === 'string' && v.trim()){
+          for (const line of v.split(/\n+/)){ const t=line.trim(); if (t) out.push({s:k, text:t, date:fallbackDate}); }
+        } else if (Array.isArray(v)){
+          for (const line of v){ const t=String(line||'').trim(); if (t) out.push({s:k, text:t, date:fallbackDate}); }
         }
       }
     }
@@ -70,19 +56,15 @@
       s5: Number(rec.points.s5 || rec.points.S5 || rec.points['5S'] || 0)
     };
     rec.notes = parseNotesFlexible(obj.notes, rec.date);
-
     for (const k of Object.keys(obj||{})){
       if (/^S[1-5]$/i.test(k) && Array.isArray(obj[k])){
-        for (const line of obj[k]) {
-          const t = String(line||'').trim();
-          if (t) rec.notes.push({ s:k, text:t, date:rec.date });
-        }
+        for (const line of obj[k]){ const t=String(line||'').trim(); if (t) rec.notes.push({s:k, text:t, date:rec.date}); }
       }
     }
     return rec;
   }
 
-  // ---------------- Import/Export/PIN ----------------
+  // -------- Import / Export / PIN --------
   async function handleImport(files){
     if (!files || !files.length) return;
     const current = store.load();
@@ -100,7 +82,6 @@
         alert('Errore file: ' + f.name);
       }
     }
-
     const merged = Array.from(byKey.values()).sort((a,b)=> new Date(a.date)-new Date(b.date));
     store.save(merged);
     render();
@@ -121,14 +102,12 @@
 
   function initLock(){
     const btn = $('#btn-lock'); if (!btn) return;
-
     const paint = () => {
       const pin = localStorage.getItem(PIN_KEY);
       btn.textContent = pin ? '🔓' : '🔒';
       btn.title = pin ? 'PIN impostato — clic per cambiare' : 'Imposta PIN';
     };
     paint();
-
     btn.onclick = () => {
       const old = localStorage.getItem(PIN_KEY);
       if (old){
@@ -137,33 +116,28 @@
         const n1 = prompt('Nuovo PIN (4-10 cifre):'); if (!n1) return;
         const n2 = prompt('Conferma nuovo PIN:');     if (n2 !== n1){ alert('Non coincide'); return; }
         localStorage.setItem(PIN_KEY, n1);
-        alert('PIN aggiornato.');
-        paint();
+        alert('PIN aggiornato.'); paint();
       } else {
         const n1 = prompt('Imposta PIN (demo 1234):'); if (!n1) return;
-        localStorage.setItem(PIN_KEY, n1);
-        paint();
+        localStorage.setItem(PIN_KEY, n1); paint();
       }
     };
   }
 
-  // ---------------- Grafico 5S (HTML) ----------------
+  // -------- Grafico (colonne verticali) --------
   function chart5sHTML(p){
     const c = (k,lab)=>`
       <div class="col">
         <div class="colbar ${k}" style="height:${Math.max(3, Number(p[k])||0)}%"></div>
         <div class="colcap"><span>${lab}</span>${fmtP(p[k])}</div>
       </div>`;
-    return `<div class="chart5s">
-      ${c('s1','1S')}${c('s2','2S')}${c('s3','3S')}${c('s4','4S')}${c('s5','5S')}
-    </div>`;
+    return `<div class="chart5s">${c('s1','1S')}${c('s2','2S')}${c('s3','3S')}${c('s4','4S')}${c('s5','5S')}</div>`;
   }
 
-  // ---------------- HOME ----------------
+  // -------- HOME --------
   function renderHome(){
     if (document.body.dataset.page !== 'home') return;
-
-    const wrap = document.querySelector('#board-all'); if (!wrap) return;
+    const wrap = $('#board-all'); if (!wrap) return;
     const data = store.load();
 
     const activeType = $('.segmented .seg.on')?.dataset.type || 'all';
@@ -178,7 +152,7 @@
     wrap.innerHTML = '';
     const chips = $('#chip-strip'); if (chips) chips.innerHTML = '';
 
-    // Sezione “CH in ritardo”
+    // Ritardi
     const delaysBox = $('#delay-section');
     if (delaysBox){
       const late = [];
@@ -187,9 +161,7 @@
         const last = arr.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
         if (!last) continue;
         const days = Math.floor((now - new Date(last.date).getTime())/86400000);
-        if (days > 7){
-          late.push({ch, last, days});
-        }
+        if (days > 7){ late.push({ch, last, days}); }
       }
       if (late.length){
         delaysBox.style.display = 'block';
@@ -201,13 +173,12 @@
             <strong>${it.ch}</strong>
             <span class="chip">${it.last.area||''}</span>
             <span class="muted">${it.days} giorni di ritardo</span>
-            <div class="inline-actions" style="display:flex;gap:8px;">
+            <div class="inline-actions">
               <button class="btn tiny" data-go="card" data-ch="${encodeURIComponent(it.ch)}" data-date="${encodeURIComponent(it.last.date)}">Vai alla scheda</button>
               <button class="btn tiny" data-go="notes" data-ch="${encodeURIComponent(it.ch)}" data-date="${encodeURIComponent(it.last.date)}">Vedi note</button>
             </div>`;
           list.appendChild(li);
         }
-        // bind
         list.querySelectorAll('button[data-go="card"]').forEach(b=>{
           b.onclick = () => {
             const ch  = b.getAttribute('data-ch');
@@ -222,9 +193,7 @@
             location.href = `notes.html?hlCh=${ch}&hlDate=${dt}&only=1`;
           };
         });
-      } else {
-        delaysBox.style.display = 'none';
-      }
+      } else delaysBox.style.display = 'none';
     }
 
     for (const [ch, arr] of Array.from(byCh.entries()).sort()){
@@ -256,7 +225,7 @@
     });
   }
 
-  // ---------------- CHECKLIST ----------------
+  // -------- CHECKLIST --------
   function printCard(card){
     const w = window.open('', '_blank');
     w.document.write(`<title>Stampa CH</title><style>
@@ -272,12 +241,10 @@
 
   function renderChecklist(){
     if (document.body.dataset.page !== 'checklist') return;
-
     const wrap = $('#cards'); if (!wrap) return;
     const data = store.load();
     wrap.innerHTML = '';
 
-    // pre-group per CH
     const byCh = new Map();
     for (const r of data){
       const key = r.channel || 'CH?';
@@ -323,20 +290,17 @@
       `;
       wrap.appendChild(card);
 
-      // bind
       card.querySelector('.btn-print').onclick = () => printCard(card);
       card.querySelector('[data-toggle]').onclick = () => card.classList.toggle('compact');
       card.querySelector('[data-notes]').onclick = () => {
         location.href = `notes.html?hlCh=${encodeURIComponent(ch)}&hlDate=${encodeURIComponent(last?.date||'')}&only=1`;
       };
 
-      // auto-scroll se highlight
       if (hlCh === ch){
         setTimeout(()=> card.scrollIntoView({behavior:'smooth', block:'center'}), 80);
       }
     }
 
-    // toggle tutti
     const toggleAll = $('#btn-toggle-all');
     if (toggleAll){
       let compact = false;
@@ -345,40 +309,47 @@
         $$('.card-line').forEach(c => c.classList.toggle('compact', compact));
       };
     }
-
     $('#btn-print-all')?.addEventListener('click', () => window.print());
   }
 
-  // ---------------- NOTE (riduzione a singolo CH quando only=1) ----------------
+  // -------- NOTE --------
   function renderNotes(){
     if (document.body.dataset.page !== 'notes') return;
-
     const box = $('#notes-list'); if (!box) return;
 
     const rows = [];
     for (const r of store.load()){
       for (const n of (r.notes || [])){
-        rows.push({
-          ch:   r.channel,
-          area: r.area,
-          s:    n.s,
-          text: n.text,
-          date: n.date || r.date
-        });
+        rows.push({ ch:r.channel, area:r.area, s:n.s, text:n.text, date:n.date || r.date });
       }
     }
+
+    const typeVal = $('#f-type')?.value || 'all';
+    const fromVal = $('#f-from')?.value || '';
+    const toVal   = $('#f-to')?.value   || '';
+    const chVal   = ($('#f-ch')?.value  || '').trim().toLowerCase();
+
+    const inRange = (d) => {
+      const t = new Date(d).getTime();
+      if (fromVal && t < new Date(fromVal).getTime()) return false;
+      if (toVal   && t > new Date(toVal).getTime()+86400000-1) return false;
+      return true;
+    };
+
+    let list = rows
+      .filter(r => (typeVal==='all' ? true : r.area===typeVal))
+      .filter(r => (!chVal ? true : ((''+r.ch).toLowerCase().includes(chVal))))
+      .filter(r => inRange(r.date))
+      .sort((a,b)=> new Date(b.date) - new Date(a.date));
 
     const only = qs.get('only') === '1';
     const qCh  = qs.get('hlCh') ? decodeURIComponent(qs.get('hlCh')) : '';
     const qDt  = qs.get('hlDate') ? decodeURIComponent(qs.get('hlDate')) : '';
-
-    let list = rows.sort((a,b)=> new Date(b.date) - new Date(a.date));
     if (only && qCh){
       list = list.filter(r => (r.ch === qCh) && (!qDt || r.date === qDt));
     }
 
     box.innerHTML = '';
-    $('#notes-count')?.textContent   = `(${list.length})`;
     $('#notes-counter')?.textContent = `${list.length} note`;
 
     if (!list.length){
@@ -386,7 +357,6 @@
       return;
     }
 
-    // blocchi per S (come avevi chiesto in passato)
     const byS = {S1:[],S2:[],S3:[],S4:[],S5:[]};
     for (const n of list){ const key = (String(n.s).match(/[1-5]/)?.[0] || '1'); byS['S'+key].push(n); }
 
@@ -409,15 +379,12 @@
     }
   }
 
-  // ---------------- Init comuni ----------------
+  // -------- Bind comuni --------
   function initCommon(){
     $('#btn-import')?.addEventListener('click', () => $('#import-input')?.click());
-    $('#import-input')?.addEventListener('change', (e) => handleImport(e.target.files));
-
+    $('#import-input')?.addEventListener('change', e => handleImport(e.target.files));
     $('#btn-export')?.addEventListener('click', exportAll);
     $('#btn-export-supervisor')?.addEventListener('click', exportAll);
-
-    // filtri note (pulsanti pagina note già presenti nei tuoi HTML)
     $('#f-apply')?.addEventListener('click', renderNotes);
     $('#f-clear')?.addEventListener('click', () => {
       if ($('#f-type')) $('#f-type').value = 'all';
@@ -426,24 +393,22 @@
       if ($('#f-ch'))   $('#f-ch').value   = '';
       renderNotes();
     });
-
-    // switch segment (home) gestito in renderHome
   }
 
+  // -------- Render dispatcher --------
   function render(){
     renderHome();
     renderChecklist();
     renderNotes();
   }
 
-  // ---------------- Boot ----------------
+  // -------- Boot --------
   window.addEventListener('DOMContentLoaded', () => {
     initCommon();
     initLock();
     render();
-
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(err => console.warn('[SW register]', err));
+      navigator.serviceWorker.register('sw.js?v=2.5.0').catch(err => console.warn('[SW]', err));
     }
   });
 })();
