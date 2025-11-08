@@ -12,12 +12,15 @@
 <body data-page="notes">
 <header class="appbar">
   <div class="brand">
-    <a href="index.html" class="btn ghost">← Home</a>
+    <a href="index.html" class="btn back" aria-label="Home">←</a>
     <img src="assets/skf-logo.png" alt="SKF" class="brand-logo">
     <span class="brand-title">SKF 5S</span>
     <span class="brand-badge">Supervisor</span>
+    <span class="brand-badge" style="opacity:.8">Note</span>
   </div>
-  <nav class="actions">
+
+  <!-- Filtri (opzionali ma supportati da app.js) -->
+  <nav class="actions" style="gap:.4rem;flex-wrap:wrap">
     <select id="f-type" class="chip">
       <option value="all">Tutti</option>
       <option value="Rettifica">Rettifica</option>
@@ -25,23 +28,22 @@
     </select>
     <input id="f-from" type="date" class="chip">
     <input id="f-to" type="date" class="chip">
-    <input id="f-ch" type="search" placeholder="Cerca CH... es. 24" class="chip">
+    <input id="f-ch" type="text" class="chip" placeholder="Cerca CH… es. 24">
     <button id="f-apply" class="btn primary">Filtra</button>
-    <button id="f-clear" class="btn outline">Pulisci</button>
+    <button id="f-clear" class="btn">Pulisci</button>
   </nav>
 </header>
 
 <main class="container">
-  <h3>Note importate <span id="notes-count" class="muted"></span></h3>
-  <div id="notes-list" class="notes"></div>
-
-  <p style="margin-top:1.25rem">
-    <a href="index.html" class="btn ghost">← Torna alla Home</a>
-  </p>
+  <section class="card">
+    <h3>Note importate <small id="notes-count"></small></h3>
+    <div id="notes-list" class="notes"></div>
+    <div class="muted" id="notes-counter" style="margin-top:.5rem"></div>
+  </section>
 </main>
 
 <footer class="safe-bottom">
-  <div class="version">v2.4.x • PWA ready</div>
+  <a href="index.html" class="btn outline">← Torna alla Home</a>
 </footer>
 
 <script src="app.js"></script>
