@@ -2,28 +2,26 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>SKF 5S — Note</title>
-  <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/skf-192.png">
-  <meta name="theme-color" content="#0d63d6">
-  <link rel="stylesheet" href="style.css?v=2.5.0">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="notes">
 <header class="appbar">
   <div class="brand">
-    <img src="assets/skf-logo.png" alt="SKF" class="brand-logo">
+    <img src="assets/skf-logo.png" class="brand-logo" alt="SKF">
     <span class="brand-title">SKF 5S</span>
     <span class="brand-badge">Supervisor</span>
   </div>
   <nav class="actions">
-    <a href="index.html" class="btn ghost">Home</a>
-    <a href="checklist.html" class="btn ghost">Checklist</a>
+    <a href="index.html" class="btn big">← Home</a>
   </nav>
 </header>
 
 <main class="container">
   <section class="card">
+    <h3>Filtri <span id="notes-count" class="muted"></span></h3>
     <div class="filters">
       <label>Tipo
         <select id="f-type">
@@ -34,16 +32,18 @@
       </label>
       <label>Da <input id="f-from" type="date"></label>
       <label>A <input id="f-to" type="date"></label>
-      <label>CH <input id="f-ch" type="text" placeholder="es. 21"></label>
-      <button id="f-apply" class="btn">Applica</button>
-      <button id="f-clear" class="btn outline">Pulisci</button>
-      <span id="notes-counter" class="muted" style="margin-left:auto"></span>
+      <label>CH <input id="f-ch" type="text" placeholder="Es. CH 11"></label>
+      <button id="f-apply" class="btn primary">Applica</button>
+      <button id="f-clear" class="btn">Pulisci</button>
     </div>
   </section>
 
-  <section id="notes-list"></section>
+  <section class="card">
+    <h3>Note <span id="notes-counter" class="muted"></span></h3>
+    <div id="notes-list"></div>
+  </section>
 </main>
 
-<script src="app.js?v=2.5.0"></script>
+<script src="app.js"></script>
 </body>
 </html>
