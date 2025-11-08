@@ -1,8 +1,7 @@
-const BUILD = '2.4.6'; // bump ad ogni release
-const STATIC_CACHE = `skf5s-static-${BUILD}`;
+const BUILD = '2.5.0';
+const STATIC_CACHE  = `skf5s-static-${BUILD}`;
 const RUNTIME_CACHE = `skf5s-runtime-${BUILD}`;
 
-// file statici minimi
 const PRECACHE = [
   './',
   'index.html',
@@ -24,17 +23,12 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys
-        .filter(k => ![STATIC_CACHE, RUNTIME_CACHE].includes(k))
-        .map(k => caches.delete(k))
-      )
-    ).then(() => self.clients.claim())
+      Promise.all(keys.filter(k => ![STATIC_CACHE, RUNTIME_CACHE].includes(k)).map(k => caches.delete(k)))
+    ).then(()=>self.clients.claim())
   );
 });
 
-// Strategia:
-// - HTML e JS: network-first (evita “file vecchi” dopo deploy)
-// - Tutto il resto: cache-first con fallback rete
+// HTML/JS network-first; il resto cache-first
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   const url = new URL(req.url);
@@ -52,7 +46,6 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // cache-first per immagini/CSS
   e.respondWith(
     caches.match(req).then(cached => cached || fetch(req).then(res => {
       const copy = res.clone();
