@@ -2,32 +2,31 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>SKF 5S — Checklist</title>
-  <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/skf-192.png">
-  <meta name="theme-color" content="#0d63d6">
-  <link rel="stylesheet" href="style.css?v=2.5.0">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="checklist">
 <header class="appbar">
   <div class="brand">
-    <img src="assets/skf-logo.png" alt="SKF" class="brand-logo">
+    <img src="assets/skf-logo.png" class="brand-logo" alt="SKF">
     <span class="brand-title">SKF 5S</span>
     <span class="brand-badge">Supervisor</span>
   </div>
   <nav class="actions">
-    <a href="index.html" class="btn ghost">Home</a>
-    <a href="notes.html" class="btn ghost">Note</a>
-    <button id="btn-toggle-all" class="btn">Comprimi/Espandi tutti</button>
-    <button id="btn-print-all" class="btn outline">Stampa tutti</button>
+    <a href="index.html" class="btn big">← Home</a>
+    <button id="btn-toggle-all" class="btn outline">Comprimi/Espandi tutti</button>
   </nav>
 </header>
 
 <main class="container">
-  <section id="cards"></section>
+  <div id="cards"></div>
+  <div style="margin-top:12px">
+    <button id="btn-print-all" class="btn outline">Stampa tutti i CH</button>
+  </div>
 </main>
 
-<script src="app.js?v=2.5.0"></script>
+<script src="app.js"></script>
 </body>
 </html>
