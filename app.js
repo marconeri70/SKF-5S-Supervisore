@@ -163,7 +163,7 @@
   function renderHome(){
     if (document.body.dataset.page !== 'home') return;
 
-    const wrap = $('#board-all'); if (!wrap) return;
+    const wrap = document.querySelector('#board-all'); if (!wrap) return;
     const data = store.load();
 
     const activeType = $('.segmented .seg.on')?.dataset.type || 'all';
