@@ -111,3 +111,100 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
   .btn{padding:8px 10px}
   .chart5s .col{width:40px}
 }
+
+/* ====== MIGLIORIE GRAFICI (HOME + CHECKLIST) ====== */
+
+/* card che contiene i mini-grafici (home) */
+.board-all { 
+  display: grid;
+  grid-template-columns: repeat(3, minmax(280px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .board-all {
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .board-all {
+    grid-template-columns: minmax(260px, 1fr);
+  }
+}
+
+/* riquadro singolo del CH (home) */
+.mini-card {
+  border: 1px solid #e6ebf2;
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 14px 10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.03);
+}
+
+/* contenitore barre verticali (home + checklist) */
+.mini-bars {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  align-items: end;
+  height: 120px;              /* più alto per visibilità */
+  margin: 6px 0 8px;
+}
+.mini-bar {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(#eef3fb,#f7f9fc);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e9eef7;
+}
+/* colonna colorata (riempimento %): verrà scalata via style="--h:xx%" */
+.mini-bar::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: var(--h, 0%);
+  background: var(--c, #888);
+  border-radius: 10px;
+}
+
+/* etichette sotto (1S..5S) sempre leggibili */
+.mini-scale {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  font-size: 12px;
+  color: #334155;
+  margin-top: 4px;
+}
+.mini-scale span { 
+  text-align: center; 
+  white-space: nowrap;
+}
+
+/* riga “Apri scheda” */
+.open-link {
+  display: inline-block;
+  font-size: 12px;
+  margin-top: 4px;
+  color: #0d63d6;
+}
+
+/* legenda sotto il carosello (home) */
+.legend5s { 
+  margin: 6px 0 4px; 
+}
+
+/* ===== CH in ritardo – pulsanti più leggibili ===== */
+.delay-list .btn.tiny {
+  padding: 0.25rem .6rem;
+  font-size: 12px;
+  border-radius: 999px;
+}
+
+/* ===== CHECKLIST: grafico dentro ogni scheda ===== */
+.sheet-graph {
+  margin: 10px 0 6px;
+}
+.sheet-graph .mini-bars { height: 110px; }
+.sheet-graph .mini-scale { font-size: 12px; }
