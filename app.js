@@ -334,5 +334,29 @@
     if ('serviceWorker' in navigator){
       navigator.serviceWorker.register('sw.js?v=244').catch(e=>console.warn('[SW]',e));
     }
-  });
-})();
+
+// ===== UTIL: colori 5S coerenti (1S..5S) =====
+const S_COLORS = ["#5B7CF3","#E64B3C","#F29F3E","#35B36C","#3A87F2"]; 
+// 1S blu/viola, 2S rosso, 3S arancio, 4S verde, 5S azzurro (adegua se vuoi)
+
+/**
+ * Crea il blocco grafico a barre verticali
+ * @param {number[]} perc Array [p1,p2,p3,p4,p5] in percento (0..100)
+ * @param {string} extraClass classe extra (es. "sheet-graph")
+ * @returns {HTMLElement}
+ */
+function buildMiniGraph(perc, extraClass="") {
+  const wrap = document.createElement("div");
+  wrap.className = (extraClass ? extraClass+" " : "") + "mini-graph";
+  wrap.innerHTML = `
+    <div class="mini-bars">
+      ${perc.map((p,i)=>(
+        `<div class="mini-bar" style="--h:${Math.max(0,Math.min(100,p))}%;--c:${S_COLORS[i]};"></div>`
+      )).join("")}
+    </div>
+    <div class="mini-scale">
+      <span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span>
+    </div>
+  `;
+  return wrap;
+}
