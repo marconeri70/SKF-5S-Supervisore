@@ -76,12 +76,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .chip{display:inline-block;background:#eef5ff;border-radius:999px;padding:4px 10px;color:#0b3b8f;font-weight:700;border:1px solid #d8e6ff}
 
 /* Ritardi */
-#delay-section{display:none;margin-top:16px;border:2px solid #ff5a5a;background:#fff4f4;border-radius:12px;padding:12px 14px}
-#delay-section .delay-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
-#delay-section .delay-list li{border:1px solid #ffd6d6;border-radius:10px;padding:8px 10px;background:#fff;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.delay-section{display:none;margin-top:16px;border:2px solid #ff5a5a;background:#fff4f4;border-radius:12px;padding:12px 14px}
+.delay-section .delay-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.delay-section .delay-list li{border:1px solid #ffd6d6;border-radius:10px;padding:8px 10px;background:#fff;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 
 /* Checklist */
-#cards{display:flex;flex-direction:column;gap:12px}
+.cards{display:flex;flex-direction:column;gap:12px}
 .card-line{background:#fff;border:1px solid var(--ring);border-radius:14px;padding:12px}
 .card-line.compact .chart5s{display:none}
 .card-line.compact .pills{display:none}
