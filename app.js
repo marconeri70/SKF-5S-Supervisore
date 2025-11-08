@@ -147,54 +147,49 @@
     }});
   }
 
-function renderHome(){
-  const wrap = $('#board-all'); if (!wrap) return;
-  const data = store.load();
+  function renderHome(){
+    const wrap = $('#board-all'); if (!wrap) return;
+    const data = store.load();
+    const activeType = $('.segmented .seg.on')?.dataset.type || 'all';
+    const filt = (r) => activeType==='all' ? true : (r.area===activeType);
 
-  const activeType = $('.segmented .seg.on')?.dataset.type || 'all';
-  const filt = (r) => activeType==='all' ? true : (r.area===activeType);
+    const byCh = new Map();
+    for (const r of data.filter(filt)){
+      const k = r.channel || 'CH?';
+      (byCh.get(k) || byCh.set(k, []).get(k)).push(r);
+    }
+    wrap.innerHTML = '';
+    const chips = $('#chip-strip'); if (chips) chips.innerHTML = '';
 
-  // group per CH, prendi ultimo record
-  const byCh = new Map();
-  for (const r of data.filter(filt)){
-    const k = r.channel || 'CH?';
-    (byCh.get(k) || byCh.set(k, []).get(k)).push(r);
+    for (const [ch, arr] of Array.from(byCh.entries()).sort()){
+      const last = arr.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
+      const p = last?.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
+
+      const card = document.createElement('div');
+      card.className = 'board-mini';
+      card.innerHTML = `
+        <div class="bm-top"><div class="bm-title">${ch} <span class="muted">${last?.area||''}</span></div></div>
+        <div class="chart5s">
+          ${[['1S','l1','s1'],['2S','l2','s2'],['3S','l3','s3'],['4S','l4','s4'],['5S','l5','s5']]
+            .map(([lbl,cls,key]) => `
+              <div class="col">
+                <div class="colbar ${cls}" style="height:${Number(p[key])||0}%"></div>
+                <div class="colcap">${lbl}<span>${fmtPct(p[key])}</span></div>
+              </div>`).join('')}
+        </div>
+        <div class="bm-actions"><button class="btn link open-card">Apri scheda</button></div>`;
+      wrap.appendChild(card);
+      card.querySelector('.open-card').onclick = () => location.href = 'checklist.html#' + encodeURIComponent(ch);
+
+      const chip = document.createElement('button');
+      chip.className = 'chip'; chip.textContent = ch;
+      chip.onclick = () => location.href = 'checklist.html#' + encodeURIComponent(ch);
+      chips?.appendChild(chip);
+    }
+    $$('.segmented .seg').forEach(b=>{
+      b.onclick = () => { $$('.segmented .seg').forEach(x=>x.classList.remove('on')); b.classList.add('on'); renderHome(); };
+    });
   }
-
-  wrap.innerHTML = '';
-  const chips = $('#chip-strip'); if (chips) chips.innerHTML = '';
-
-  for (const [ch, arr] of Array.from(byCh.entries()).sort()){
-    const last = arr.sort((a,b)=> new Date(a.date)-new Date(b.date)).slice(-1)[0];
-    const p = last?.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
-
-    // card compatta con barre verticali
-    const card = document.createElement('div');
-    card.className = 'card-micro';
-    card.innerHTML = `
-      <h5>${ch} <span class="area">${last?.area||''}</span></h5>
-      <div class="vbars">
-        <div class="vbar"><i class="l1" style="height:${p.s1}%"></i><span class="lbl">1S ${p.s1}%</span></div>
-        <div class="vbar"><i class="l2" style="height:${p.s2}%"></i><span class="lbl">2S ${p.s2}%</span></div>
-        <div class="vbar"><i class="l3" style="height:${p.s3}%"></i><span class="lbl">3S ${p.s3}%</span></div>
-        <div class="vbar"><i class="l4" style="height:${p.s4}%"></i><span class="lbl">4S ${p.s4}%</span></div>
-        <div class="vbar"><i class="l5" style="height:${p.s5}%"></i><span class="lbl">5S ${p.s5}%</span></div>
-      </div>`;
-    wrap.appendChild(card);
-
-    // chip scorciatoia
-    const chip = document.createElement('button');
-    chip.className = 'chip';
-    chip.textContent = ch;
-    chip.onclick = () => location.href = 'checklist.html#' + encodeURIComponent(ch);
-    chips?.appendChild(chip);
-  }
-
-  // toggle tipo
-  $$('.segmented .seg').forEach(b=>{
-    b.onclick = () => { $$('.segmented .seg').forEach(x=>x.classList.remove('on')); b.classList.add('on'); renderHome(); };
-  });
-}
 
   function printCard(card){
     const w = window.open('', '_blank');
@@ -230,51 +225,41 @@ function renderHome(){
       const card = document.createElement('article');
       card.className = 'card-line'; card.id = `CH-${CSS.escape(ch)}`;
       card.innerHTML = `
-  <div class="top">
-    <div>
-      <div style="font-weight:800">CH ${ch.replace(/^CH\\s*/,'')}</div>
-      <div class="muted" style="font-size:.9rem">${last?.area||''} • Ultimo: ${last?.date||'-'}</div>
-    </div>
-    <div class="pills">
-      <span class="pill s1">S1 ${fmtPercent(p.s1)}</span>
-      <span class="pill s2">S2 ${fmtPercent(p.s2)}</span>
-      <span class="pill s3">S3 ${fmtPercent(p.s3)}</span>
-      <span class="pill s4">S4 ${fmtPercent(p.s4)}</span>
-      <span class="pill s5">S5 ${fmtPercent(p.s5)}</span>
-      <span class="pill" style="background:#eef5ff;color:#0b3b8f">Voto medio ${fmtPercent(mean(p))}</span>
-    </div>
-    <div class="btns">
-      <button class="btn outline btn-print">Stampa PDF</button>
-      <button class="btn outline btn-toggle">Comprimi/Espandi</button>
-      <a class="btn ghost" href="notes.html?hlCh=${encodeURIComponent(ch)}&hlDate=${encodeURIComponent(last?.date||'')}">Vedi note</a>
-    </div>
-  </div>
-
-  <div class="vbars" aria-label="Grafico 5S">
-    <div class="vbar"><i class="l1" style="height:${p.s1}%"></i><span class="lbl">1S ${p.s1}%</span></div>
-    <div class="vbar"><i class="l2" style="height:${p.s2}%"></i><span class="lbl">2S ${p.s2}%</span></div>
-    <div class="vbar"><i class="l3" style="height:${p.s3}%"></i><span class="lbl">3S ${p.s3}%</span></div>
-    <div class="vbar"><i class="l4" style="height:${p.s4}%"></i><span class="lbl">4S ${p.s4}%</span></div>
-    <div class="vbar"><i class="l5" style="height:${p.s5}%"></i><span class="lbl">5S ${p.s5}%</span></div>
-  </div>
-`;
+        <div class="top">
+          <div>
+            <div class="cl-title">CH ${ch.replace(/^CH\\s*/,'')}</div>
+            <div class="muted" style="font-size:.9rem">${last?.area||''} • Ultimo: ${last?.date||'-'}</div>
+          </div>
+          <div class="pills">
+            <span class="pill s1">S1 ${fmtPct(p.s1)}</span>
+            <span class="pill s2">S2 ${fmtPct(p.s2)}</span>
+            <span class="pill s3">S3 ${fmtPct(p.s3)}</span>
+            <span class="pill s4">S4 ${fmtPct(p.s4)}</span>
+            <span class="pill s5">S5 ${fmtPct(p.s5)}</span>
+            <span class="pill" style="background:#eef5ff;color:#0b3b8f">Voto medio ${fmtPct(mean(p))}</span>
+          </div>
+          <div class="buttons">
+            <button class="btn outline btn-print">Stampa PDF</button>
+            <button class="btn outline btn-toggle">Comprimi/Espandi</button>
+            <button class="btn link btn-notes">Vedi note</button>
+          </div>
+        </div>
+        <div class="chart5s mt">
+          ${[['1S','l1','s1'],['2S','l2','s2'],['3S','l3','s3'],['4S','l4','s4'],['5S','l5','s5']]
+            .map(([lbl,cls,key]) => `
+              <div class="col">
+                <div class="colbar ${cls}" style="height:${Number(p[key])||0}%"></div>
+                <div class="colcap">${lbl} <span>${fmtPct(p[key])}</span></div>
+              </div>`).join('')}
+        </div>`;
       wrap.appendChild(card);
       card.querySelector('.btn-print').onclick  = () => printCard(card);
       card.querySelector('.btn-toggle').onclick = () => card.classList.toggle('compact');
       card.querySelector('.btn-notes').onclick  = () => {
         const lastDate = last?.date || '';
-        location.href = `notes.html?hlCh=${encodeURIComponent(ch)}${lastDate ? `&hlDate=${encodeURIComponent(lastDate)}`:''}`
-          const tgl = card.querySelector('.btn-toggle');
-          const tgl = card.querySelector('.btn-toggle');
-if (tgl){
-  let compact = false;
-  tgl.onclick = () => {
-    compact = !compact;
-    card.classList.toggle('compact', compact);
-  };
-}
-
-      }
+        location.href = `notes.html?hlCh=${encodeURIComponent(ch)}${lastDate ? `&hlDate=${encodeURIComponent(lastDate)}`:''}`;
+      };
+    }
     $('#btn-toggle-all')?.addEventListener('click', () => {
       const makeCompact = !$('.card-line')?.classList.contains('compact');
       $$('.card-line').forEach(c => c.classList.toggle('compact', makeCompact));
