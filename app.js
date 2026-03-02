@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.4.5 (Finale)
+// SKF 5S — Supervisor v2.4.6 (UI Migliorata)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -181,6 +181,7 @@ function setupImport() {
 
             records.forEach(record => {
               if (record && (record.ch || record.channel || record.name)) {
+                
                 const isDuplicate = existingData.some(ex => 
                   (ex.ch === record.ch || ex.channel === record.channel || ex.name === record.name) &&
                   (ex.area === record.area) && 
@@ -216,7 +217,7 @@ function setupImport() {
 }
 
 // ===============================
-// NOTE
+// NOTE (Con Filtri e Doppia Tendina)
 // ===============================
 function renderNotes() {
   const list = $('#notes-list');
@@ -234,9 +235,7 @@ function renderNotes() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const urlCh = urlParams.get('hlCh');
-  if (urlCh) {
-    if(fCh) fCh.value = urlCh;
-  }
+  if (urlCh && fCh) fCh.value = urlCh;
 
   function updateNotes() {
     const data = store.load();
@@ -279,17 +278,14 @@ function renderNotes() {
     list.innerHTML = '';
     
     filtered.forEach(r => {
-      const div = document.createElement('div');
-      div.className = 'card-line'; 
-      
       let notesHtml = '';
       if (typeof r.notes === 'string') {
         let formattedText = r.notes.replace(/(⬜0|⬜ 0)/g, '<br><br>$1');
         if(formattedText.startsWith('<br><br>')) formattedText = formattedText.substring(8);
         notesHtml = `
           <details style="margin-bottom: 8px;">
-            <summary style="font-weight: bold; cursor: pointer; padding: 10px; background: #fff; border-radius: 6px; border: 1px solid #dfe6f4;">
-              Apri dettagli nota
+            <summary style="font-weight: bold; cursor: pointer; padding: 12px; background: #fff; border-radius: 6px; border: 1px solid #dfe6f4; list-style: none;">
+              ▶ Dettagli nota generica
             </summary>
             <div style="max-height: 250px; overflow-y: auto; padding: 12px; font-size: 0.9rem; background: #fff; border: 1px solid #dfe6f4; border-top: none; border-radius: 0 0 6px 6px; line-height: 1.6;">
               ${formattedText}
@@ -304,10 +300,10 @@ function renderNotes() {
 
             notesHtml += `
               <details style="margin-bottom: 8px;">
-                <summary style="color: ${sColor}; font-weight: bold; cursor: pointer; padding: 10px; background: #fff; border-radius: 6px; border: 1px solid #dfe6f4; user-select: none;">
-                  ${k.toUpperCase()} — Clicca per espandere
+                <summary style="color: ${sColor}; font-weight: bold; cursor: pointer; padding: 12px; background: #fff; border-radius: 6px; border: 1px solid #dfe6f4; list-style: none; user-select: none;">
+                  ▶ ${k.toUpperCase()} — Clicca per espandere
                 </summary>
-                <div style="max-height: 250px; overflow-y: auto; padding: 12px; font-size: 0.9rem; background: #fff; border: 1px solid #dfe6f4; border-top: none; border-radius: 0 0 6px 6px; line-height: 1.6;">
+                <div style="max-height: 250px; overflow-y: auto; padding: 14px; font-size: 0.95rem; background: #fff; border: 1px solid #dfe6f4; border-top: none; border-radius: 0 0 6px 6px; line-height: 1.6; color: #334155;">
                   ${formattedText}
                 </div>
               </details>
@@ -318,19 +314,31 @@ function renderNotes() {
 
       const dataFormat = new Date(r.date);
       const dataStringa = !isNaN(dataFormat.getTime()) ? dataFormat.toLocaleString('it-IT', {dateStyle: 'short', timeStyle: 'short'}) : r.date;
+      const nomeCH = r.ch || r.channel || r.name || 'CH ?';
 
-      div.innerHTML = `
-        <div class="top" style="margin-bottom: 12px;">
-          <div>
-            <div class="ttl" style="font-size: 1.1rem;"><strong>${r.ch || r.channel || r.name || 'CH ?'}</strong></div>
-            <div class="muted">${(r.area || '').toUpperCase()} • ${dataStringa}</div>
+      // Creazione della tendina "Master" del Reparto
+      const masterDetails = document.createElement('details');
+      masterDetails.className = 'master-details';
+      
+      masterDetails.innerHTML = `
+        <summary class="master-summary">
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <span style="font-size:1.15rem; font-weight:800; color:var(--ink);">${nomeCH}</span>
+            <span style="font-size:0.85rem; font-weight:600; color:var(--muted); letter-spacing:0.5px;">${(r.area || '').toUpperCase()} • ${dataStringa}</span>
           </div>
-        </div>
-        <div style="background: #f6f9ff; padding: 10px; border-radius: 8px; border: 1px solid #dfe6f4;">
+          <span style="font-size:1.5rem; color:#cbd5e1; font-weight:bold;">+</span>
+        </summary>
+        <div class="master-body">
           ${notesHtml}
         </div>
       `;
-      list.appendChild(div);
+
+      masterDetails.addEventListener('toggle', (e) => {
+        const iconSpan = e.target.querySelector('summary span:last-child');
+        if(iconSpan) iconSpan.textContent = masterDetails.open ? '−' : '+';
+      });
+
+      list.appendChild(masterDetails);
     });
 
     if(counter) counter.textContent = `(${filtered.length})`;
