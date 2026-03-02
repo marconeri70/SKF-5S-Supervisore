@@ -91,3 +91,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 /* Footer */
 .safe-bottom{position:sticky;bottom:0;background:linear-gradient(180deg, rgba(246,249,255,0), rgba(246,249,255,1) 28%, rgba(246,249,255,1));padding:10px 10px 16px;display:grid;place-items:center}
 .version{color:var(--muted);font-size:12px;margin-top:6px}
+
+/* Migliora l'impaginazione dei bottoni nella Checklist */
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.btns .btn { padding: 6px 12px; font-size: 0.85rem; flex-grow: 1; text-align: center; justify-content: center; }
+
+/* Evidenziazione per auto-scroll delle note */
+.flash-target { outline: 2px solid #ef4444; background-color: #fff6f6 !important; }
