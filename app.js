@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.4.5 (con Import & Note)
+// SKF 5S — Supervisor v2.4.5 (Finale)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -181,8 +181,6 @@ function setupImport() {
 
             records.forEach(record => {
               if (record && (record.ch || record.channel || record.name)) {
-                
-                // Evita duplicati
                 const isDuplicate = existingData.some(ex => 
                   (ex.ch === record.ch || ex.channel === record.channel || ex.name === record.name) &&
                   (ex.area === record.area) && 
@@ -206,7 +204,6 @@ function setupImport() {
 
         if (newRecordsAdded > 0) {
           alert(`✅ Importazione completata! Sono stati aggiunti ${newRecordsAdded} nuovi controlli.`);
-          
           const page = (document.body.dataset.page || '').toLowerCase();
           if (page === 'home') renderHome();
           else if (location.pathname.includes('checklist')) renderChecklist();
@@ -259,16 +256,13 @@ function renderNotes() {
 
     const filtered = withNotes.filter(r => {
       if (typeVal !== 'all' && (r.area || '').toUpperCase() !== typeVal.toUpperCase()) return false;
-      
       if (chVal) {
         const rCh = String(r.ch || r.channel || r.name || '').toLowerCase();
         if (!rCh.includes(chVal)) return false;
       }
-      
       if (fromVal || toVal) {
         const rDate = new Date(r.date);
         rDate.setHours(0,0,0,0);
-        
         if (fromVal) {
             const f = new Date(fromVal); f.setHours(0,0,0,0);
             if (rDate < f) return false;
@@ -282,31 +276,57 @@ function renderNotes() {
     });
 
     filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
-
     list.innerHTML = '';
+    
     filtered.forEach(r => {
       const div = document.createElement('div');
       div.className = 'card-line'; 
       
       let notesHtml = '';
       if (typeof r.notes === 'string') {
-        notesHtml = `<p style="margin:0">${r.notes}</p>`;
+        let formattedText = r.notes.replace(/(⬜0|⬜ 0)/g, '<br><br>$1');
+        if(formattedText.startsWith('<br><br>')) formattedText = formattedText.substring(8);
+        notesHtml = `
+          <details style="margin-bottom: 8px;">
+            <summary style="font-weight: bold; cursor: pointer; padding: 10px; background: #fff; border-radius: 6px; border: 1px solid #dfe6f4;">
+              Apri dettagli nota
+            </summary>
+            <div style="max-height: 250px; overflow-y: auto; padding: 12px; font-size: 0.9rem; background: #fff; border: 1px solid #dfe6f4; border-top: none; border-radius: 0 0 6px 6px; line-height: 1.6;">
+              ${formattedText}
+            </div>
+          </details>`;
       } else if (typeof r.notes === 'object') {
         for (const [k, v] of Object.entries(r.notes)) {
           if (v && String(v).trim()) {
-            notesHtml += `<div style="margin-bottom:4px"><strong style="color:var(--s${k.replace('s','')}); text-transform:uppercase">${k}:</strong> ${v}</div>`;
+            const sColor = `var(--${k.toLowerCase()}, #0d63d6)`;
+            let formattedText = v.replace(/(⬜0|⬜ 0)/g, '<br><br>$1');
+            if(formattedText.startsWith('<br><br>')) formattedText = formattedText.substring(8);
+
+            notesHtml += `
+              <details style="margin-bottom: 8px;">
+                <summary style="color: ${sColor}; font-weight: bold; cursor: pointer; padding: 10px; background: #fff; border-radius: 6px; border: 1px solid #dfe6f4; user-select: none;">
+                  ${k.toUpperCase()} — Clicca per espandere
+                </summary>
+                <div style="max-height: 250px; overflow-y: auto; padding: 12px; font-size: 0.9rem; background: #fff; border: 1px solid #dfe6f4; border-top: none; border-radius: 0 0 6px 6px; line-height: 1.6;">
+                  ${formattedText}
+                </div>
+              </details>
+            `;
           }
         }
       }
 
+      const dataFormat = new Date(r.date);
+      const dataStringa = !isNaN(dataFormat.getTime()) ? dataFormat.toLocaleString('it-IT', {dateStyle: 'short', timeStyle: 'short'}) : r.date;
+
       div.innerHTML = `
-        <div class="top">
+        <div class="top" style="margin-bottom: 12px;">
           <div>
-            <div class="ttl"><strong>${r.ch || r.channel || r.name || 'CH ?'}</strong></div>
-            <div class="muted">${(r.area || '').toUpperCase()} • ${r.date || '-'}</div>
+            <div class="ttl" style="font-size: 1.1rem;"><strong>${r.ch || r.channel || r.name || 'CH ?'}</strong></div>
+            <div class="muted">${(r.area || '').toUpperCase()} • ${dataStringa}</div>
           </div>
         </div>
-        <div style="margin-top: 12px; background: #f6f9ff; padding: 12px; border-radius: 8px; border: 1px solid #dfe6f4;">
+        <div style="background: #f6f9ff; padding: 10px; border-radius: 8px; border: 1px solid #dfe6f4;">
           ${notesHtml}
         </div>
       `;
