@@ -21,25 +21,37 @@
 
 <main class="container">
   <section class="card">
-    <h3>Filtri <span id="notes-count" class="muted"></span></h3>
-    <div class="filters">
-      <label>Tipo
+    <h3 style="margin-top:0;">Filtri <span id="notes-count" class="muted"></span></h3>
+    <div class="filters-grid">
+      <div class="f-group">
+        <label>Reparto</label>
         <select id="f-type">
           <option value="all">Tutti</option>
           <option value="Rettifica">Rettifica</option>
           <option value="MONTAGGIO">Montaggio</option>
         </select>
-      </label>
-      <label>Da <input id="f-from" type="date"></label>
-      <label>A <input id="f-to" type="date"></label>
-      <label>CH <input id="f-ch" type="text" placeholder="Es. CH 11"></label>
-      <button id="f-apply" class="btn primary">Applica</button>
-      <button id="f-clear" class="btn">Pulisci</button>
+      </div>
+      <div class="f-group">
+        <label>Da data</label>
+        <input id="f-from" type="date">
+      </div>
+      <div class="f-group">
+        <label>A data</label>
+        <input id="f-to" type="date">
+      </div>
+      <div class="f-group">
+        <label>Canale</label>
+        <input id="f-ch" type="text" placeholder="Es. CH 11">
+      </div>
+    </div>
+    <div class="f-actions">
+      <button id="f-apply" class="btn primary" style="flex:1;">Applica filtri</button>
+      <button id="f-clear" class="btn outline" style="flex:1;">Pulisci</button>
     </div>
   </section>
 
-  <section class="card">
-    <h3>Note <span id="notes-counter" class="muted"></span></h3>
+  <section class="card" style="background: transparent; box-shadow: none; padding: 0;">
+    <h3 style="margin-top: 10px;">Note <span id="notes-counter" class="muted"></span></h3>
     <div id="notes-list"></div>
   </section>
 </main>
