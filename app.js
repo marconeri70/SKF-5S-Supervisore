@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.4.6 (UI Migliorata)
+// SKF 5S — Supervisor v2.4.7 (Aree Separate & Ritardi)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -35,8 +35,11 @@ function renderHome(){
   const filt = r => activeType==='all' ? true : (r.area === activeType || r.area?.toUpperCase() === activeType?.toUpperCase());
 
   const byCh = new Map();
+  // RAGGRUPPAMENTO CORRETTO: Unisce in base ad Area + Canale
   for (const r of data.filter(filt)){
-    const k = r.channel || r.ch || r.name || 'CH ?';
+    const areaKey = (r.area || '').toUpperCase();
+    const chKey = r.channel || r.ch || r.name || 'CH ?';
+    const k = areaKey + '|' + chKey; 
     if (!byCh.has(k)) byCh.set(k, []);
     byCh.get(k).push(r);
   }
@@ -44,22 +47,42 @@ function renderHome(){
   wrap.innerHTML = '';
   const groups = Array.from(byCh.entries()).sort((a,b)=> String(a[0]).localeCompare(String(b[0])));
 
-  for (const [ch, arr] of groups){
+  for (const [key, arr] of groups){
     const last = arr.sort((a,b)=> new Date(a.date) - new Date(b.date)).slice(-1)[0] || {};
+    const ch = last.channel || last.ch || last.name || 'CH ?';
+    const area = last.area || '';
     const p = last.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
+
+    // Calcolo Ritardi (> 7 giorni)
+    let delayedS = [];
+    if (last.dates) {
+      const now = new Date();
+      for (let i=1; i<=5; i++) {
+         if (last.dates[`s${i}`]) {
+            const diff = now - new Date(last.dates[`s${i}`]);
+            if (diff > 7 * 24 * 60 * 60 * 1000) delayedS.push(i);
+         }
+      }
+    }
+    const delayPct = (delayedS.length / 5) * 100;
+    const delayBtn = delayedS.length > 0 
+        ? `<a href="notes.html?hlCh=${encodeURIComponent(ch)}&hlArea=${encodeURIComponent(area)}" class="delay-btn">${delayedS.map(s=>s+'S').join(', ')} in ritardo</a>`
+        : '';
 
     const card = document.createElement('div');
     card.className = 'mini-card';
     card.innerHTML = `
-      <h5>${ch} <span class="area">${last.area || ''}</span></h5>
+      <h5>${ch} <span class="area">${area.toUpperCase()}</span></h5>
       <div class="mini-bars">
         <div class="mini-bar" style="--h:${p.s1||0}%;--c:#e11d48"></div>
         <div class="mini-bar" style="--h:${p.s2||0}%;--c:#f59e0b"></div>
         <div class="mini-bar" style="--h:${p.s3||0}%;--c:#10b981"></div>
         <div class="mini-bar" style="--h:${p.s4||0}%;--c:#0ea5e9"></div>
         <div class="mini-bar" style="--h:${p.s5||0}%;--c:#6366f1"></div>
+        <div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#ef4444;background:#fee2e2"></div>
       </div>
-      <div class="mini-scale"><span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span></div>
+      <div class="mini-scale"><span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span><span>Ritardi</span></div>
+      ${delayBtn}
       <a href="checklist.html#${encodeURIComponent(ch)}" class="open-link">Apri scheda</a>
     `;
     wrap.appendChild(card);
@@ -83,8 +106,11 @@ function renderChecklist(){
 
   const data = store.load();
   const byCh = new Map();
+  // RAGGRUPPAMENTO CORRETTO: Unisce in base ad Area + Canale
   for (const r of data){
-    const k = r.channel || r.ch || r.name || 'CH ?';
+    const areaKey = (r.area || '').toUpperCase();
+    const chKey = r.channel || r.ch || r.name || 'CH ?';
+    const k = areaKey + '|' + chKey;
     if (!byCh.has(k)) byCh.set(k, []);
     byCh.get(k).push(r);
   }
@@ -92,9 +118,24 @@ function renderChecklist(){
   listMount.innerHTML = '';
   const entries = Array.from(byCh.entries()).sort((a,b)=> String(a[0]).localeCompare(String(b[0])));
 
-  for (const [ch, arr] of entries){
+  for (const [key, arr] of entries){
     const last = arr.sort((a,b)=> new Date(a.date) - new Date(b.date)).slice(-1)[0] || {};
+    const ch = last.channel || last.ch || last.name || 'CH ?';
+    const area = last.area || '';
     const p = last.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
+
+    // Calcolo Ritardi (> 7 giorni)
+    let delayedS = [];
+    if (last.dates) {
+      const now = new Date();
+      for (let i=1; i<=5; i++) {
+         if (last.dates[`s${i}`]) {
+            const diff = now - new Date(last.dates[`s${i}`]);
+            if (diff > 7 * 24 * 60 * 60 * 1000) delayedS.push(i);
+         }
+      }
+    }
+    const delayPct = (delayedS.length / 5) * 100;
 
     const card = document.createElement('section');
     card.className = 'card-line';
@@ -104,7 +145,7 @@ function renderChecklist(){
       <div class="top">
         <div>
           <div class="ttl"><strong>${ch}</strong></div>
-          <div class="muted">${(last.area||'').toUpperCase()} • Ultimo: ${last.date || '-'}</div>
+          <div class="muted">${area.toUpperCase()} • Ultimo: ${last.date || '-'}</div>
         </div>
         <div class="pills">
           <span class="pill s1">S1 ${fmtPercent(p.s1)}</span>
@@ -117,7 +158,7 @@ function renderChecklist(){
         <div class="btns">
           <button class="btn outline btn-print">Stampa PDF</button>
           <button class="btn outline btn-toggle">Comprimi/Espandi</button>
-          <a class="btn ghost" href="notes.html?hlCh=${encodeURIComponent(ch)}&hlDate=${encodeURIComponent(last.date||'')}">Vedi note</a>
+          <a class="btn ghost" href="notes.html?hlCh=${encodeURIComponent(ch)}&hlArea=${encodeURIComponent(area)}">Vedi note</a>
         </div>
       </div>
       <div class="mini-bars sheet-graph">
@@ -126,8 +167,9 @@ function renderChecklist(){
         <div class="mini-bar" style="--h:${p.s3||0}%;--c:#10b981"></div>
         <div class="mini-bar" style="--h:${p.s4||0}%;--c:#0ea5e9"></div>
         <div class="mini-bar" style="--h:${p.s5||0}%;--c:#6366f1"></div>
+        <div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#ef4444;background:#fee2e2"></div>
       </div>
-      <div class="mini-scale"><span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span></div>
+      <div class="mini-scale"><span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span><span>Ritardi</span></div>
     `;
 
     listMount.appendChild(card);
@@ -233,9 +275,19 @@ function renderNotes() {
 
   if (!list) return;
 
+  // Lettura parametri URL per auto-filtrare
   const urlParams = new URLSearchParams(window.location.search);
   const urlCh = urlParams.get('hlCh');
+  const urlArea = urlParams.get('hlArea');
+  
   if (urlCh && fCh) fCh.value = urlCh;
+  if (urlArea && fType) {
+    Array.from(fType.options).forEach(opt => {
+      if (opt.value.toUpperCase() === urlArea.toUpperCase()) {
+        fType.value = opt.value;
+      }
+    });
+  }
 
   function updateNotes() {
     const data = store.load();
@@ -316,7 +368,6 @@ function renderNotes() {
       const dataStringa = !isNaN(dataFormat.getTime()) ? dataFormat.toLocaleString('it-IT', {dateStyle: 'short', timeStyle: 'short'}) : r.date;
       const nomeCH = r.ch || r.channel || r.name || 'CH ?';
 
-      // Creazione della tendina "Master" del Reparto
       const masterDetails = document.createElement('details');
       masterDetails.className = 'master-details';
       
