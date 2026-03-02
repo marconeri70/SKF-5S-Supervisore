@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.4.5
+// SKF 5S — Supervisor v2.4.5 (con Import & Note)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -153,10 +153,192 @@ function renderChecklist(){
 }
 
 // ===============================
+// IMPORTAZIONE JSON
+// ===============================
+function setupImport() {
+  const btnImports = document.querySelectorAll('#btn-import');
+  const inputImports = document.querySelectorAll('#import-input');
+
+  if (btnImports.length === 0 || inputImports.length === 0) return;
+
+  btnImports.forEach((btn, index) => {
+    const input = inputImports[index];
+    if(input) {
+      btn.addEventListener('click', () => input.click());
+      
+      input.addEventListener('change', async (event) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        let existingData = store.load();
+        let newRecordsAdded = 0;
+
+        for (const file of files) {
+          try {
+            const text = await file.text();
+            const importedData = JSON.parse(text);
+            const records = Array.isArray(importedData) ? importedData : [importedData];
+
+            records.forEach(record => {
+              if (record && (record.ch || record.channel || record.name)) {
+                
+                // Evita duplicati
+                const isDuplicate = existingData.some(ex => 
+                  (ex.ch === record.ch || ex.channel === record.channel || ex.name === record.name) &&
+                  (ex.area === record.area) && 
+                  (ex.date === record.date)
+                );
+
+                if (!isDuplicate) {
+                  existingData.push(record);
+                  newRecordsAdded++;
+                }
+              }
+            });
+          } catch (err) {
+            console.error("Errore JSON nel file:", file.name, err);
+            alert(`Errore nella lettura di ${file.name}. Il file potrebbe essere corrotto.`);
+          }
+        }
+
+        localStorage.setItem(store.KEY, JSON.stringify(existingData));
+        input.value = '';
+
+        if (newRecordsAdded > 0) {
+          alert(`✅ Importazione completata! Sono stati aggiunti ${newRecordsAdded} nuovi controlli.`);
+          
+          const page = (document.body.dataset.page || '').toLowerCase();
+          if (page === 'home') renderHome();
+          else if (location.pathname.includes('checklist')) renderChecklist();
+        } else {
+          alert("ℹ️ Nessun nuovo dato aggiunto. I file importati erano già presenti nel sistema.");
+        }
+      });
+    }
+  });
+}
+
+// ===============================
+// NOTE
+// ===============================
+function renderNotes() {
+  const list = $('#notes-list');
+  const counter = $('#notes-counter');
+  const countSpan = $('#notes-count');
+  
+  const fType = $('#f-type');
+  const fFrom = $('#f-from');
+  const fTo = $('#f-to');
+  const fCh = $('#f-ch');
+  const btnApply = $('#f-apply');
+  const btnClear = $('#f-clear');
+
+  if (!list) return;
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlCh = urlParams.get('hlCh');
+  if (urlCh) {
+    if(fCh) fCh.value = urlCh;
+  }
+
+  function updateNotes() {
+    const data = store.load();
+    const typeVal = fType ? fType.value : 'all';
+    const fromVal = (fFrom && fFrom.value) ? new Date(fFrom.value) : null;
+    const toVal = (fTo && fTo.value) ? new Date(fTo.value) : null;
+    const chVal = (fCh && fCh.value) ? fCh.value.trim().toLowerCase() : '';
+
+    const withNotes = data.filter(r => {
+      let hasText = false;
+      if (typeof r.notes === 'string' && r.notes.trim()) hasText = true;
+      if (typeof r.notes === 'object' && r.notes !== null) {
+        if (Object.values(r.notes).some(v => v && String(v).trim())) hasText = true;
+      }
+      return hasText;
+    });
+
+    const filtered = withNotes.filter(r => {
+      if (typeVal !== 'all' && (r.area || '').toUpperCase() !== typeVal.toUpperCase()) return false;
+      
+      if (chVal) {
+        const rCh = String(r.ch || r.channel || r.name || '').toLowerCase();
+        if (!rCh.includes(chVal)) return false;
+      }
+      
+      if (fromVal || toVal) {
+        const rDate = new Date(r.date);
+        rDate.setHours(0,0,0,0);
+        
+        if (fromVal) {
+            const f = new Date(fromVal); f.setHours(0,0,0,0);
+            if (rDate < f) return false;
+        }
+        if (toVal) {
+            const t = new Date(toVal); t.setHours(0,0,0,0);
+            if (rDate > t) return false;
+        }
+      }
+      return true;
+    });
+
+    filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    list.innerHTML = '';
+    filtered.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'card-line'; 
+      
+      let notesHtml = '';
+      if (typeof r.notes === 'string') {
+        notesHtml = `<p style="margin:0">${r.notes}</p>`;
+      } else if (typeof r.notes === 'object') {
+        for (const [k, v] of Object.entries(r.notes)) {
+          if (v && String(v).trim()) {
+            notesHtml += `<div style="margin-bottom:4px"><strong style="color:var(--s${k.replace('s','')}); text-transform:uppercase">${k}:</strong> ${v}</div>`;
+          }
+        }
+      }
+
+      div.innerHTML = `
+        <div class="top">
+          <div>
+            <div class="ttl"><strong>${r.ch || r.channel || r.name || 'CH ?'}</strong></div>
+            <div class="muted">${(r.area || '').toUpperCase()} • ${r.date || '-'}</div>
+          </div>
+        </div>
+        <div style="margin-top: 12px; background: #f6f9ff; padding: 12px; border-radius: 8px; border: 1px solid #dfe6f4;">
+          ${notesHtml}
+        </div>
+      `;
+      list.appendChild(div);
+    });
+
+    if(counter) counter.textContent = `(${filtered.length})`;
+    if(countSpan) countSpan.textContent = `(${filtered.length})`;
+  }
+
+  if (btnApply) btnApply.onclick = updateNotes;
+  if (btnClear) {
+    btnClear.onclick = () => {
+      if(fType) fType.value = 'all';
+      if(fFrom) fFrom.value = '';
+      if(fTo) fTo.value = '';
+      if(fCh) fCh.value = '';
+      updateNotes();
+    };
+  }
+
+  updateNotes();
+}
+
+// ===============================
 // Avvio
 // ===============================
 onReady(()=>{
+  if (typeof setupImport === 'function') setupImport();
+
   const page = (document.body.dataset.page || '').toLowerCase();
   if (page === 'home') renderHome();
+  else if (page === 'notes') renderNotes();
   else if (location.pathname.includes('checklist')) renderChecklist();
 });
