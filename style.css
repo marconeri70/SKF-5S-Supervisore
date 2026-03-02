@@ -41,8 +41,26 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .mini-bar{flex:1;position:relative;height:100%;border-radius:8px;background:#eef2f7;border:1px solid #dde4ee;overflow:hidden}
 .mini-bar::after{content:"";position:absolute;bottom:0;left:0;right:0;height:var(--h);background:var(--c);border-radius:8px}
 .mini-scale{display:flex;justify-content:space-between;font-size:12px;color:#334155;font-weight:600;margin-top:4px;}
-.mini-scale span{width:20%;text-align:center}
+
+/* Modifica per 6 colonne nel grafico (inclusi i Ritardi) */
+.mini-scale span { width: 16.66%; text-align: center; font-size: 11px; }
+
 .open-link{display:block;text-align:center;background:#f6f9ff;font-size:13px;font-weight:600;margin-top:12px;color:#0d63d6;text-decoration:none;padding:8px;border-radius:8px;}
+
+/* Stile per il pulsante dei Ritardi */
+.delay-btn { 
+  display: inline-block; 
+  border: 1px solid #ef4444; 
+  color: #ef4444; 
+  background: #fee2e2; 
+  padding: 4px 10px; 
+  border-radius: 999px; 
+  font-size: 0.75rem; 
+  font-weight: bold; 
+  text-decoration: none; 
+  margin-top: 8px;
+  text-align: center;
+}
 
 /* Checklist */
 .card-line{background:#fff;border:1px solid var(--ring);border-radius:14px;padding:12px;margin-bottom:14px}
@@ -54,7 +72,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .pill.s4{background:var(--s4)} .pill.s5{background:var(--s5)} .pill.avg{background:#eef5ff;color:#0b3b8f}
 
 /* ==================================
-   NUOVI STILI PER FILTRI E NOTE 
+   STILI PER FILTRI E NOTE 
    ================================== */
 .filters-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px;}
 .f-group{display:flex;flex-direction:column;gap:6px;}
@@ -70,5 +88,6 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .master-details[open] .master-summary{background:#f6f9ff;border-bottom:1px solid var(--ring);}
 .master-body{padding:16px;background:#fdfdfd;}
 
+/* Footer */
 .safe-bottom{position:sticky;bottom:0;background:linear-gradient(180deg, rgba(246,249,255,0), rgba(246,249,255,1) 28%, rgba(246,249,255,1));padding:10px 10px 16px;display:grid;place-items:center}
 .version{color:var(--muted);font-size:12px;margin-top:6px}
