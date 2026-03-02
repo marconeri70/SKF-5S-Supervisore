@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.4.7 (Aree Separate & Ritardi)
+// SKF 5S — Supervisor v2.4.8 (Smart Link & Auto-Scroll Ritardi)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -35,7 +35,6 @@ function renderHome(){
   const filt = r => activeType==='all' ? true : (r.area === activeType || r.area?.toUpperCase() === activeType?.toUpperCase());
 
   const byCh = new Map();
-  // RAGGRUPPAMENTO CORRETTO: Unisce in base ad Area + Canale
   for (const r of data.filter(filt)){
     const areaKey = (r.area || '').toUpperCase();
     const chKey = r.channel || r.ch || r.name || 'CH ?';
@@ -53,7 +52,6 @@ function renderHome(){
     const area = last.area || '';
     const p = last.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
 
-    // Calcolo Ritardi (> 7 giorni)
     let delayedS = [];
     if (last.dates) {
       const now = new Date();
@@ -65,8 +63,10 @@ function renderHome(){
       }
     }
     const delayPct = (delayedS.length / 5) * 100;
+    
+    // SMART LINK: Passa l'array dei ritardi nell'URL (openS=1,2)
     const delayBtn = delayedS.length > 0 
-        ? `<a href="notes.html?hlCh=${encodeURIComponent(ch)}&hlArea=${encodeURIComponent(area)}" class="delay-btn">${delayedS.map(s=>s+'S').join(', ')} in ritardo</a>`
+        ? `<a href="notes.html?hlCh=${encodeURIComponent(ch)}&hlArea=${encodeURIComponent(area)}&openS=${delayedS.join(',')}" class="delay-btn">⚠️ ${delayedS.map(s=>s+'S').join(', ')} in ritardo (Apri)</a>`
         : '';
 
     const card = document.createElement('div');
@@ -106,7 +106,6 @@ function renderChecklist(){
 
   const data = store.load();
   const byCh = new Map();
-  // RAGGRUPPAMENTO CORRETTO: Unisce in base ad Area + Canale
   for (const r of data){
     const areaKey = (r.area || '').toUpperCase();
     const chKey = r.channel || r.ch || r.name || 'CH ?';
@@ -124,7 +123,6 @@ function renderChecklist(){
     const area = last.area || '';
     const p = last.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
 
-    // Calcolo Ritardi (> 7 giorni)
     let delayedS = [];
     if (last.dates) {
       const now = new Date();
@@ -136,6 +134,11 @@ function renderChecklist(){
       }
     }
     const delayPct = (delayedS.length / 5) * 100;
+    
+    // SMART LINK anche nella checklist
+    const delayBtn = delayedS.length > 0 
+        ? `<div style="text-align:center; margin-top:10px;"><a href="notes.html?hlCh=${encodeURIComponent(ch)}&hlArea=${encodeURIComponent(area)}&openS=${delayedS.join(',')}" class="delay-btn">⚠️ Vedi note ritardo (${delayedS.map(s=>s+'S').join(', ')})</a></div>`
+        : '';
 
     const card = document.createElement('section');
     card.className = 'card-line';
@@ -170,6 +173,7 @@ function renderChecklist(){
         <div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#ef4444;background:#fee2e2"></div>
       </div>
       <div class="mini-scale"><span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span><span>Ritardi</span></div>
+      ${delayBtn}
     `;
 
     listMount.appendChild(card);
@@ -223,7 +227,6 @@ function setupImport() {
 
             records.forEach(record => {
               if (record && (record.ch || record.channel || record.name)) {
-                
                 const isDuplicate = existingData.some(ex => 
                   (ex.ch === record.ch || ex.channel === record.channel || ex.name === record.name) &&
                   (ex.area === record.area) && 
@@ -259,7 +262,7 @@ function setupImport() {
 }
 
 // ===============================
-// NOTE (Con Filtri e Doppia Tendina)
+// NOTE (Apertura e Scroll Automatico)
 // ===============================
 function renderNotes() {
   const list = $('#notes-list');
@@ -275,11 +278,12 @@ function renderNotes() {
 
   if (!list) return;
 
-  // Lettura parametri URL per auto-filtrare
   const urlParams = new URLSearchParams(window.location.search);
   const urlCh = urlParams.get('hlCh');
   const urlArea = urlParams.get('hlArea');
-  
+  const openS = urlParams.get('openS'); 
+  const openSArr = openS ? openS.split(',') : []; // Array con i numeri in ritardo es. ["1", "3"]
+
   if (urlCh && fCh) fCh.value = urlCh;
   if (urlArea && fType) {
     Array.from(fType.options).forEach(opt => {
@@ -330,7 +334,14 @@ function renderNotes() {
     list.innerHTML = '';
     
     filtered.forEach(r => {
+      const nomeCH = r.ch || r.channel || r.name || 'CH ?';
+      const rArea = (r.area || '').toUpperCase();
+      
+      // Controlla se questa è la scheda specifica su cui ha cliccato l'utente per il ritardo
+      const isTargetCard = (urlCh && urlArea && nomeCH.toLowerCase() === urlCh.toLowerCase() && rArea === urlArea.toUpperCase());
+      
       let notesHtml = '';
+      
       if (typeof r.notes === 'string') {
         let formattedText = r.notes.replace(/(⬜0|⬜ 0)/g, '<br><br>$1');
         if(formattedText.startsWith('<br><br>')) formattedText = formattedText.substring(8);
@@ -346,14 +357,18 @@ function renderNotes() {
       } else if (typeof r.notes === 'object') {
         for (const [k, v] of Object.entries(r.notes)) {
           if (v && String(v).trim()) {
+            const sNum = k.replace('s', ''); // Estrae "1", "2", ecc.
+            const isDelayedS = (isTargetCard && openSArr.includes(sNum)); // Vero se questa voce è in ritardo
+            
             const sColor = `var(--${k.toLowerCase()}, #0d63d6)`;
             let formattedText = v.replace(/(⬜0|⬜ 0)/g, '<br><br>$1');
             if(formattedText.startsWith('<br><br>')) formattedText = formattedText.substring(8);
 
+            // Se è in ritardo, la apre in automatico (open) e le dà uno sfondo rosso chiaro
             notesHtml += `
-              <details style="margin-bottom: 8px;">
-                <summary style="color: ${sColor}; font-weight: bold; cursor: pointer; padding: 12px; background: #fff; border-radius: 6px; border: 1px solid #dfe6f4; list-style: none; user-select: none;">
-                  ▶ ${k.toUpperCase()} — Clicca per espandere
+              <details style="margin-bottom: 8px;" ${isDelayedS ? 'open' : ''}>
+                <summary style="color: ${sColor}; font-weight: bold; cursor: pointer; padding: 12px; background: ${isDelayedS ? '#fee2e2' : '#fff'}; border-radius: 6px; border: 1px solid ${isDelayedS ? '#ef4444' : '#dfe6f4'}; list-style: none; user-select: none;">
+                  ▶ ${k.toUpperCase()} — Clicca per espandere ${isDelayedS ? ' — ⚠️ IN RITARDO' : ''}
                 </summary>
                 <div style="max-height: 250px; overflow-y: auto; padding: 14px; font-size: 0.95rem; background: #fff; border: 1px solid #dfe6f4; border-top: none; border-radius: 0 0 6px 6px; line-height: 1.6; color: #334155;">
                   ${formattedText}
@@ -366,18 +381,23 @@ function renderNotes() {
 
       const dataFormat = new Date(r.date);
       const dataStringa = !isNaN(dataFormat.getTime()) ? dataFormat.toLocaleString('it-IT', {dateStyle: 'short', timeStyle: 'short'}) : r.date;
-      const nomeCH = r.ch || r.channel || r.name || 'CH ?';
 
       const masterDetails = document.createElement('details');
       masterDetails.className = 'master-details';
+      
+      // Se questa è la scheda cliccata e ci sono ritardi da mostrare, aprila automaticamente!
+      if (isTargetCard && openSArr.length > 0) {
+          masterDetails.open = true;
+          masterDetails.id = 'target-note-card'; // Diamo un ID per lo scorrimento automatico
+      }
       
       masterDetails.innerHTML = `
         <summary class="master-summary">
           <div style="display:flex; flex-direction:column; gap:2px;">
             <span style="font-size:1.15rem; font-weight:800; color:var(--ink);">${nomeCH}</span>
-            <span style="font-size:0.85rem; font-weight:600; color:var(--muted); letter-spacing:0.5px;">${(r.area || '').toUpperCase()} • ${dataStringa}</span>
+            <span style="font-size:0.85rem; font-weight:600; color:var(--muted); letter-spacing:0.5px;">${rArea} • ${dataStringa}</span>
           </div>
-          <span style="font-size:1.5rem; color:#cbd5e1; font-weight:bold;">+</span>
+          <span style="font-size:1.5rem; color:#cbd5e1; font-weight:bold;">${masterDetails.open ? '−' : '+'}</span>
         </summary>
         <div class="master-body">
           ${notesHtml}
@@ -394,6 +414,15 @@ function renderNotes() {
 
     if(counter) counter.textContent = `(${filtered.length})`;
     if(countSpan) countSpan.textContent = `(${filtered.length})`;
+
+    // AUTO-SCROLL verso la nota aperta
+    setTimeout(() => {
+        const target = document.getElementById('target-note-card');
+        if (target) {
+            target.scrollIntoView({behavior: 'smooth', block: 'start'});
+            target.classList.add('flash-target'); // Colora l'intestazione di rosso temporaneamente
+        }
+    }, 400); // Leggero ritardo per permettere il rendering del DOM
   }
 
   if (btnApply) btnApply.onclick = updateNotes;
