@@ -79,8 +79,25 @@
 
 <footer class="safe-bottom">
   <button id="btn-export-supervisor" class="btn huge outline">Esporta dati per Supervisore (PIN)</button>
-  <div class="version">v2.5.0 • PWA ready</div>
+  <div class="version">v2.5.1 • PWA ready</div>
 </footer>
+
+<dialog id="pinDialog" class="modal">
+  <div class="modal-box">
+    <h4>🔒 Area Riservata</h4>
+    <p class="muted" style="font-size: 0.9rem; margin-top: 0; margin-bottom: 16px;">
+      Inserisci il PIN Supervisore per sbloccare l'esportazione dei dati.
+    </p>
+    <div class="field">
+      <span>PIN (Default: 6170)</span>
+      <input type="password" id="pinInput" inputmode="numeric" placeholder="••••" />
+    </div>
+    <div class="modal-actions">
+      <button id="btn-cancel-pin" class="btn outline">Annulla</button>
+      <button id="btn-confirm-pin" class="btn primary">Sblocca</button>
+    </div>
+  </div>
+</dialog>
 
 <script src="app.js"></script>
 </body>
