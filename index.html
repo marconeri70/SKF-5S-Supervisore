@@ -18,6 +18,7 @@
     <span class="brand-badge">Supervisor</span>
   </div>
   <nav class="actions">
+    <a href="alerts.html" class="btn outline" style="color: #ef4444; border-color: #ef4444;">🚨 Allerte Sotto 100%</a>
     <button id="btn-notes" class="btn ghost" onclick="location.href='notes.html'">Note</button>
     <button id="btn-import" class="btn primary">Importa</button>
     <input id="import-input" type="file" accept="application/json,.json" multiple hidden>
@@ -28,9 +29,9 @@
 </header>
 
 <main class="container">
-  <section class="card split">
+  <section class="card split align-center">
     <div class="col">
-      <h2>Cosa è 5S</h2>
+      <h2 style="margin-top:0;">Cosa è 5S</h2>
       <ol class="what5s">
         <li><span class="pill s1">1S Selezionare</span> — Eliminare il superfluo.</li>
         <li><span class="pill s2">2S Sistemare</span> — Un posto per tutto e tutto al suo posto.</li>
@@ -54,11 +55,11 @@
       </div>
     </div>
 
-<section class="card" id="delay-section" hidden>
-  <h3>⚠️ CH in ritardo</h3>
-  <p class="muted small">I seguenti canali non sono stati aggiornati da più di 7 giorni:</p>
-  <ul id="delay-list" class="delay-list"></ul>
-</section>
+    <section class="card" id="delay-section" hidden>
+      <h3>⚠️ CH in ritardo</h3>
+      <p class="muted small">I seguenti canali non sono stati aggiornati da più di 7 giorni:</p>
+      <ul id="delay-list" class="delay-list"></ul>
+    </section>
      
     <div class="hscroll">
       <div id="board-all" class="board-all"></div>
@@ -78,7 +79,7 @@
 
 <footer class="safe-bottom">
   <button id="btn-export-supervisor" class="btn huge outline">Esporta dati per Supervisore (PIN)</button>
-  <div class="version">v2.3.8 • PWA ready</div>
+  <div class="version">v2.5.0 • PWA ready</div>
 </footer>
 
 <script src="app.js"></script>
