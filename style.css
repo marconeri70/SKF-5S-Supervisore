@@ -24,12 +24,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 
 /* Cards */
 .card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.04);margin:12px 0}
-.card.split{display:grid;grid-template-columns: 1.2fr .8fr;gap:14px}
+.card.split{display:grid;grid-template-columns: 1.2fr .8fr;gap:14px; align-items: center;}
 .img-col{display:flex;align-items:center;justify-content:center}
 .hero5s{max-width:100%;height:auto}
 .muted{color:var(--muted)}
 
-/* Dashboard Home - Griglia Automatica */
+/* Dashboard Home - Griglia Automatica e Ordinamento */
 .hscroll{overflow:visible;} 
 .board-all{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
 .mini-card{border:1px solid #e5e8ef;border-radius:12px;padding:14px;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.04);transition:transform 0.2s;display:flex;flex-direction:column;justify-content:space-between;}
@@ -37,17 +37,17 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .mini-card h5{margin:0 0 .5rem;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center;}
 .mini-card .area{background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600;}
 
-.mini-bars{display:flex;gap:10px;align-items:flex-end;height:110px;margin:6px 0}
-.mini-bar{flex:1;position:relative;height:100%;border-radius:8px;background:#eef2f7;border:1px solid #dde4ee;overflow:hidden}
-.mini-bar::after{content:"";position:absolute;bottom:0;left:0;right:0;height:var(--h);background:var(--c);border-radius:8px}
+/* Grafici a Barre con Percentuali */
+.mini-bars{display:flex;gap:10px;align-items:flex-end;height:100px;margin:24px 0 6px 0} /* Spazio extra sopra per le % */
+.mini-bar{flex:1;position:relative;height:100%;border-radius:8px;background:#eef2f7;border:1px solid #dde4ee;overflow:visible;} /* visible per mostrare testo fuori */
+.mini-bar::after{content:"";position:absolute;bottom:0;left:0;right:0;height:var(--h);background:var(--c);border-radius:8px; z-index:1;}
+.mini-bar::before{content:attr(data-val); position:absolute; bottom:calc(var(--h) + 4px); left:0; right:0; text-align:center; font-size:11px; font-weight:800; color:#475569; z-index:2;}
 .mini-scale{display:flex;justify-content:space-between;font-size:12px;color:#334155;font-weight:600;margin-top:4px;}
-
-/* Modifica per 6 colonne nel grafico (inclusi i Ritardi) */
 .mini-scale span { width: 16.66%; text-align: center; font-size: 11px; }
 
 .open-link{display:block;text-align:center;background:#f6f9ff;font-size:13px;font-weight:600;margin-top:12px;color:#0d63d6;text-decoration:none;padding:8px;border-radius:8px;}
 
-/* Stile per il pulsante dei Ritardi */
+/* Stile per i pulsanti dei Ritardi */
 .delay-btn { 
   display: inline-block; 
   border: 1px solid #ef4444; 
@@ -70,6 +70,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .pill{padding:4px 9px;border-radius:999px;color:#fff;font-weight:700}
 .pill.s1{background:var(--s1)} .pill.s2{background:var(--s2)} .pill.s3{background:var(--s3)}
 .pill.s4{background:var(--s4)} .pill.s5{background:var(--s5)} .pill.avg{background:#eef5ff;color:#0b3b8f}
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.btns .btn { padding: 6px 12px; font-size: 0.85rem; flex-grow: 1; text-align: center; justify-content: center; }
 
 /* ==================================
    STILI PER FILTRI E NOTE 
@@ -88,13 +90,41 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .master-details[open] .master-summary{background:#f6f9ff;border-bottom:1px solid var(--ring);}
 .master-body{padding:16px;background:#fdfdfd;}
 
+/* EVIDENZIAZIONE ROSSA PER ALLERTE E RITARDI */
+details.alert-box summary {
+  background: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #991b1b !important;
+}
+details.alert-box[open] summary {
+  background: #fca5a5 !important;
+  color: #7f1d1d !important;
+}
+.alert-reason {
+  font-size: 0.9rem;
+  color: #dc2626;
+  font-weight: 800;
+  margin-bottom: 8px;
+  display: block;
+  text-transform: uppercase;
+  background: #fef2f2;
+  padding: 6px;
+  border-radius: 4px;
+  border-left: 3px solid #dc2626;
+}
+.flash-target { outline: 2px solid #ef4444; background-color: #fff6f6 !important; }
+
 /* Footer */
 .safe-bottom{position:sticky;bottom:0;background:linear-gradient(180deg, rgba(246,249,255,0), rgba(246,249,255,1) 28%, rgba(246,249,255,1));padding:10px 10px 16px;display:grid;place-items:center}
 .version{color:var(--muted);font-size:12px;margin-top:6px}
 
-/* Migliora l'impaginazione dei bottoni nella Checklist */
-.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.btns .btn { padding: 6px 12px; font-size: 0.85rem; flex-grow: 1; text-align: center; justify-content: center; }
-
-/* Evidenziazione per auto-scroll delle note */
-.flash-target { outline: 2px solid #ef4444; background-color: #fff6f6 !important; }
+/* ==================================
+   REGOLE PER STAMPA E PDF
+   ================================== */
+@media print {
+  .appbar, .btns, .delay-btn, .segmented, footer, #btn-print-all, #btn-toggle-all, #btn-lock, #btn-import, #btn-notes { display: none !important; }
+  body { background: #fff; color: #000; }
+  .container { max-width: 100%; padding: 0; margin: 0; }
+  .card-line { page-break-inside: avoid; break-inside: avoid; border: 1px solid #000; box-shadow: none; margin-bottom: 20px; }
+  body.print-single .card-line:not(.print-target) { display: none !important; }
+}
