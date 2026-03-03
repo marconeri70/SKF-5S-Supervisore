@@ -38,8 +38,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .mini-card .area{background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600;}
 
 /* Grafici a Barre con Percentuali */
-.mini-bars{display:flex;gap:10px;align-items:flex-end;height:100px;margin:24px 0 6px 0} /* Spazio extra sopra per le % */
-.mini-bar{flex:1;position:relative;height:100%;border-radius:8px;background:#eef2f7;border:1px solid #dde4ee;overflow:visible;} /* visible per mostrare testo fuori */
+.mini-bars{display:flex;gap:10px;align-items:flex-end;height:100px;margin:24px 0 6px 0}
+.mini-bar{flex:1;position:relative;height:100%;border-radius:8px;background:#eef2f7;border:1px solid #dde4ee;overflow:visible;}
 .mini-bar::after{content:"";position:absolute;bottom:0;left:0;right:0;height:var(--h);background:var(--c);border-radius:8px; z-index:1;}
 .mini-bar::before{content:attr(data-val); position:absolute; bottom:calc(var(--h) + 4px); left:0; right:0; text-align:center; font-size:11px; font-weight:800; color:#475569; z-index:2;}
 .mini-scale{display:flex;justify-content:space-between;font-size:12px;color:#334155;font-weight:600;margin-top:4px;}
@@ -114,13 +114,40 @@ details.alert-box[open] summary {
 }
 .flash-target { outline: 2px solid #ef4444; background-color: #fff6f6 !important; }
 
+/* Evidenziazione singole righe nelle note */
+.note-line { padding: 6px 0; border-bottom: 1px dashed #e2e8f0; margin-bottom: 4px; }
+.note-line:last-child { border-bottom: none; margin-bottom: 0; }
+.note-line.bad-score {
+  background: #fef2f2;
+  padding: 8px;
+  border-radius: 6px;
+  border-left: 4px solid #ef4444;
+  color: #991b1b;
+  font-weight: 500;
+}
+
+/* ==================================
+   STILE FINESTRA PIN (MODAL)
+   ================================== */
+.modal { border: 0; padding: 0; background: transparent; }
+.modal::backdrop { background: rgba(0,0,0,0.5); }
+.modal-box { 
+  background: #fff; border-radius: 16px; padding: 20px; 
+  width: 90vw; max-width: 400px; margin: auto; 
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+}
+.modal-box h4 { margin-top: 0; margin-bottom: 16px; color: #0d63d6; font-size: 1.2rem; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.field span { font-size: 0.85rem; font-weight: 600; color: #475569; }
+.field input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
 /* Footer */
 .safe-bottom{position:sticky;bottom:0;background:linear-gradient(180deg, rgba(246,249,255,0), rgba(246,249,255,1) 28%, rgba(246,249,255,1));padding:10px 10px 16px;display:grid;place-items:center}
 .version{color:var(--muted);font-size:12px;margin-top:6px}
 
-/* ==================================
-   REGOLE PER STAMPA E PDF
-   ================================== */
+/* REGOLE PER STAMPA E PDF */
 @media print {
   .appbar, .btns, .delay-btn, .segmented, footer, #btn-print-all, #btn-toggle-all, #btn-lock, #btn-import, #btn-notes { display: none !important; }
   body { background: #fff; color: #000; }
