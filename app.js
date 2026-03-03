@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.5.1 (Scanner Righe Rosse & Sicurezza PIN)
+// SKF 5S — Supervisor v2.5.2 (Media in Home & Scanner Note)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -54,7 +54,6 @@ function formatNoteText(text) {
   
   lines.forEach(line => {
     if (!line.trim()) return;
-    // Cerca il quadratino azzurro (selezionato) sui punteggi bassi
     const isBad = line.includes('🟦0') || line.includes('🟦 0') || 
                   line.includes('🟦1') || line.includes('🟦 1') || 
                   line.includes('🟦3') || line.includes('🟦 3');
@@ -106,8 +105,16 @@ function renderHome(){
 
     const card = document.createElement('div');
     card.className = 'mini-card';
+    
+    // QUI LA MODIFICA: Aggiunto il badge della Media nell'intestazione
     card.innerHTML = `
-      <h5>${ch} <span class="area">${area.toUpperCase()}</span></h5>
+      <h5>
+        ${ch} 
+        <div style="display:flex; gap:6px; align-items:center;">
+          <span style="font-size:0.75rem; background:#eef5ff; color:#0b3b8f; padding:2px 6px; border-radius:6px; font-weight:700;">Media ${meanPct(p)}%</span>
+          <span class="area">${area.toUpperCase()}</span>
+        </div>
+      </h5>
       <div class="mini-bars">
         <div class="mini-bar" style="--h:${toPct(p.s1)}%;--c:#e11d48" data-val="${toPct(p.s1)}%"></div>
         <div class="mini-bar" style="--h:${toPct(p.s2)}%;--c:#f59e0b" data-val="${toPct(p.s2)}%"></div>
@@ -394,7 +401,6 @@ function renderNotes() {
 
             const sColor = `var(--${k.toLowerCase()}, #0d63d6)`;
             
-            // Qui usiamo la nuova funzione che legge le righe rosse!
             let formattedText = formatNoteText(v);
 
             notesHtml += `
@@ -550,7 +556,6 @@ function setupSecurity() {
     pinInput.value = '';
     pinDialog.showModal();
     
-    // Rimuoviamo vecchi listener per evitare doppi click
     btnConfirmPin.onclick = () => {
       if (pinInput.value === CORRECT_PIN) {
         pinDialog.close();
