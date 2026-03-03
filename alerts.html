@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>SKF 5S — Allerte</title>
+  <link rel="icon" href="assets/skf-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="alerts">
+<header class="appbar">
+  <div class="brand">
+    <img src="assets/skf-logo.png" class="brand-logo" alt="SKF">
+    <span class="brand-title">SKF 5S</span>
+    <span class="brand-badge" style="background: #ef4444;">Allerte</span>
+  </div>
+  <nav class="actions">
+    <a href="index.html" class="btn big">← Home</a>
+  </nav>
+</header>
+
+<main class="container">
+  <section class="card" style="border-left: 4px solid #ef4444;">
+    <h3 style="margin-top:0; color: #ef4444;">🚨 Pannello Allerte: Sotto il 100%</h3>
+    <p class="muted small" style="margin-bottom:0;">
+      Qui sono elencati tutti i canali in cui almeno una "S" non ha raggiunto il punteggio massimo (5). 
+      Espandi per vedere il motivo esatto.
+    </p>
+  </section>
+
+  <section class="card">
+    <div class="filters-grid">
+      <div class="f-group">
+        <label>Reparto</label>
+        <select id="f-type">
+          <option value="all">Tutti</option>
+          <option value="Rettifica">Rettifica</option>
+          <option value="MONTAGGIO">Montaggio</option>
+        </select>
+      </div>
+      <div class="f-group">
+        <label>Canale</label>
+        <input id="f-ch" type="text" placeholder="Es. CH 11">
+      </div>
+      <div class="f-actions" style="align-items: flex-end;">
+        <button id="f-apply" class="btn primary" style="height: 42px;">Filtra</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" style="background: transparent; box-shadow: none; padding: 0;">
+    <h3 style="margin-top: 10px;">Da Verificare <span id="alerts-count" class="muted"></span></h3>
+    <div id="alerts-list"></div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
