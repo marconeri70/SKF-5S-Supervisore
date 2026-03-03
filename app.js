@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.5.0 (Allerte, Percentuali & Ordinamento)
+// SKF 5S — Supervisor v2.5.1 (Scanner Righe Rosse & Sicurezza PIN)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -27,7 +27,7 @@ const meanPct = p => {
   return Math.round((tot / 25) * 100);
 };
 
-// Funzione per raggruppare i dati ordinando prima per Canale e poi per Area
+// Ordinamento Intelligente (Canale poi Area)
 function getGroupedAndSortedData(dataFilter) {
   const byCh = new Map();
   for (const r of dataFilter){
@@ -44,6 +44,28 @@ function getGroupedAndSortedData(dataFilter) {
     if (compCh !== 0) return compCh;
     return areaA.localeCompare(areaB);
   });
+}
+
+// FORMATTAZIONE INTELLIGENTE NOTE (Evidenzia di rosso le righe con 0, 1 e 3)
+function formatNoteText(text) {
+  if (!text) return '';
+  const lines = text.split('\n');
+  let html = '';
+  
+  lines.forEach(line => {
+    if (!line.trim()) return;
+    // Cerca il quadratino azzurro (selezionato) sui punteggi bassi
+    const isBad = line.includes('🟦0') || line.includes('🟦 0') || 
+                  line.includes('🟦1') || line.includes('🟦 1') || 
+                  line.includes('🟦3') || line.includes('🟦 3');
+    
+    if (isBad) {
+      html += `<div class="note-line bad-score">${line}</div>`;
+    } else {
+      html += `<div class="note-line">${line}</div>`;
+    }
+  });
+  return html;
 }
 
 // ===============================
@@ -209,66 +231,6 @@ function renderChecklist(){
 }
 
 // ===============================
-// IMPORTAZIONE JSON
-// ===============================
-function setupImport() {
-  const btnImports = document.querySelectorAll('#btn-import');
-  const inputImports = document.querySelectorAll('#import-input');
-
-  if (btnImports.length === 0 || inputImports.length === 0) return;
-
-  btnImports.forEach((btn, index) => {
-    const input = inputImports[index];
-    if(input) {
-      btn.addEventListener('click', () => input.click());
-      
-      input.addEventListener('change', async (event) => {
-        const files = event.target.files;
-        if (!files || files.length === 0) return;
-
-        let existingData = store.load();
-        let newRecordsAdded = 0;
-
-        for (const file of files) {
-          try {
-            const text = await file.text();
-            const importedData = JSON.parse(text);
-            const records = Array.isArray(importedData) ? importedData : [importedData];
-
-            records.forEach(record => {
-              if (record && (record.ch || record.channel || record.name)) {
-                const isDuplicate = existingData.some(ex => 
-                  (ex.ch === record.ch || ex.channel === record.channel || ex.name === record.name) &&
-                  (ex.area === record.area) && 
-                  (ex.date === record.date)
-                );
-                if (!isDuplicate) {
-                  existingData.push(record);
-                  newRecordsAdded++;
-                }
-              }
-            });
-          } catch (err) {
-            console.error("Errore JSON:", err);
-            alert(`Errore lettura file.`);
-          }
-        }
-
-        localStorage.setItem(store.KEY, JSON.stringify(existingData));
-        input.value = '';
-
-        if (newRecordsAdded > 0) {
-          alert(`✅ Importazione completata! Aggiunti ${newRecordsAdded} controlli.`);
-          location.reload();
-        } else {
-          alert("ℹ️ Nessun nuovo dato. File già presenti.");
-        }
-      });
-    }
-  });
-}
-
-// ===============================
 // PANNELLO ALLERTE (< 100%)
 // ===============================
 function renderAlerts() {
@@ -284,7 +246,6 @@ function renderAlerts() {
     const typeVal = fType ? fType.value : 'all';
     const chVal = (fCh && fCh.value) ? fCh.value.trim().toLowerCase() : '';
 
-    // Prende solo le schede più recenti di ogni CH
     const entries = getGroupedAndSortedData(data);
     const alertCards = [];
 
@@ -420,7 +381,6 @@ function renderNotes() {
           if (v && String(v).trim()) {
             const sNum = k.replace('s', ''); 
             
-            // Analisi Punteggi e Ritardi per l'allerta rossa
             const pScore = r.points && r.points[k] !== undefined ? Number(r.points[k]) : 5;
             const sDate = r.dates && r.dates[k] ? new Date(r.dates[k]) : null;
             const isDelayed = sDate && ((new Date() - sDate) > 7 * 24 * 60 * 60 * 1000);
@@ -433,15 +393,16 @@ function renderNotes() {
             if (isSub100) alertReasonHtml += `<div class="alert-reason">📉 Punteggio non pieno: ${pScore}/5</div>`;
 
             const sColor = `var(--${k.toLowerCase()}, #0d63d6)`;
-            let formattedText = v.replace(/(⬜0|⬜ 0)/g, '<br><br>$1');
-            if(formattedText.startsWith('<br><br>')) formattedText = formattedText.substring(8);
+            
+            // Qui usiamo la nuova funzione che legge le righe rosse!
+            let formattedText = formatNoteText(v);
 
             notesHtml += `
               <details class="${isAlert ? 'alert-box' : ''}" style="margin-bottom: 8px;" ${isOpen ? 'open' : ''}>
                 <summary style="color: ${sColor}; font-weight: bold; cursor: pointer; padding: 12px; background: #fff; border-radius: 6px; border: 1px solid #dfe6f4; list-style: none; user-select: none;">
                   ▶ ${k.toUpperCase()} — Clicca per espandere ${isAlert ? ' — ⚠️ DA VERIFICARE' : ''}
                 </summary>
-                <div style="max-height: 250px; overflow-y: auto; padding: 14px; font-size: 0.95rem; background: #fff; border: 1px solid #dfe6f4; border-top: none; border-radius: 0 0 6px 6px; line-height: 1.6; color: #334155;">
+                <div style="max-height: 350px; overflow-y: auto; padding: 14px; font-size: 0.95rem; background: #fff; border: 1px solid #dfe6f4; border-top: none; border-radius: 0 0 6px 6px; line-height: 1.6; color: #334155;">
                   ${alertReasonHtml}
                   ${formattedText}
                 </div>
@@ -449,6 +410,8 @@ function renderNotes() {
             `;
           }
         }
+      } else if (typeof r.notes === 'string' && r.notes.trim()) {
+        notesHtml = `<div style="padding:12px; border:1px solid #dfe6f4; border-radius:6px; background:#fff;">${formatNoteText(r.notes)}</div>`;
       }
 
       const dataStringa = !isNaN(new Date(r.date).getTime()) ? new Date(r.date).toLocaleString('it-IT', {dateStyle: 'short', timeStyle: 'short'}) : r.date;
@@ -508,10 +471,125 @@ function renderNotes() {
 }
 
 // ===============================
+// IMPORTAZIONE JSON
+// ===============================
+function setupImport() {
+  const btnImports = document.querySelectorAll('#btn-import');
+  const inputImports = document.querySelectorAll('#import-input');
+
+  if (btnImports.length === 0 || inputImports.length === 0) return;
+
+  btnImports.forEach((btn, index) => {
+    const input = inputImports[index];
+    if(input) {
+      btn.addEventListener('click', () => input.click());
+      
+      input.addEventListener('change', async (event) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        let existingData = store.load();
+        let newRecordsAdded = 0;
+
+        for (const file of files) {
+          try {
+            const text = await file.text();
+            const importedData = JSON.parse(text);
+            const records = Array.isArray(importedData) ? importedData : [importedData];
+
+            records.forEach(record => {
+              if (record && (record.ch || record.channel || record.name)) {
+                const isDuplicate = existingData.some(ex => 
+                  (ex.ch === record.ch || ex.channel === record.channel || ex.name === record.name) &&
+                  (ex.area === record.area) && 
+                  (ex.date === record.date)
+                );
+                if (!isDuplicate) {
+                  existingData.push(record);
+                  newRecordsAdded++;
+                }
+              }
+            });
+          } catch (err) {
+            console.error("Errore JSON:", err);
+            alert(`Errore lettura file.`);
+          }
+        }
+
+        localStorage.setItem(store.KEY, JSON.stringify(existingData));
+        input.value = '';
+
+        if (newRecordsAdded > 0) {
+          alert(`✅ Importazione completata! Aggiunti ${newRecordsAdded} controlli.`);
+          location.reload();
+        } else {
+          alert("ℹ️ Nessun nuovo dato. File già presenti.");
+        }
+      });
+    }
+  });
+}
+
+// ===============================
+// ESPORTAZIONE E SICUREZZA (PIN)
+// ===============================
+function setupSecurity() {
+  const pinDialog = document.getElementById('pinDialog');
+  const pinInput = document.getElementById('pinInput');
+  const btnConfirmPin = document.getElementById('btn-confirm-pin');
+  const btnCancelPin = document.getElementById('btn-cancel-pin');
+  
+  const lockBtn = document.getElementById('btn-lock');
+  const exportTopBtn = document.getElementById('btn-export');
+  const exportBottomBtn = document.getElementById('btn-export-supervisor');
+
+  const CORRECT_PIN = "6170";
+
+  function openPinDialog(onSuccess) {
+    if (!pinDialog) return;
+    pinInput.value = '';
+    pinDialog.showModal();
+    
+    // Rimuoviamo vecchi listener per evitare doppi click
+    btnConfirmPin.onclick = () => {
+      if (pinInput.value === CORRECT_PIN) {
+        pinDialog.close();
+        onSuccess();
+      } else {
+        alert("❌ PIN Errato! Riprova.");
+        pinInput.value = '';
+      }
+    };
+    
+    btnCancelPin.onclick = () => pinDialog.close();
+  }
+
+  function exportData() {
+    const data = store.load();
+    if (data.length === 0) {
+      alert("ℹ️ Nessun dato presente da esportare.");
+      return;
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SKF_5S_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if (exportTopBtn) exportTopBtn.onclick = () => openPinDialog(exportData);
+  if (exportBottomBtn) exportBottomBtn.onclick = () => openPinDialog(exportData);
+  if (lockBtn) lockBtn.onclick = () => openPinDialog(() => alert("✅ Area Sbloccata con successo!"));
+}
+
+// ===============================
 // Avvio
 // ===============================
 onReady(()=>{
   if (typeof setupImport === 'function') setupImport();
+  setupSecurity();
 
   const printAllBtn = document.getElementById('btn-print-all');
   if (printAllBtn) printAllBtn.onclick = () => window.print();
