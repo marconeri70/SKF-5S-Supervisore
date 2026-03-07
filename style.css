@@ -155,3 +155,90 @@ details.alert-box[open] summary {
   .card-line { page-break-inside: avoid; break-inside: avoid; border: 1px solid #000; box-shadow: none; margin-bottom: 20px; }
   body.print-single .card-line:not(.print-target) { display: none !important; }
 }
+
+/* =========================================
+   HERO SPLIT 50/50 CON ANIMAZIONI (SUPERVISOR) 
+========================================= */
+.hero-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 10px;
+  align-items: center;
+}
+
+.hero-left {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.floating-img {
+  width: 100%;
+  max-width: 130px;
+  height: auto;
+  filter: drop-shadow(0 15px 15px rgba(0,0,0,0.15));
+  animation: float 4s ease-in-out infinite;
+}
+
+.hero-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hero-title {
+  margin: 0 0 6px 0;
+  color: var(--ink);
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.stack-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.stack-item .tag {
+  display: inline-block;
+  padding: 3px 6px;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.75rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.stack-item .desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+/* Colori tag specifici per Supervisore */
+.stack-item .tag.s1 { background: var(--s1); }
+.stack-item .tag.s2 { background: var(--s2); }
+.stack-item .tag.s3 { background: var(--s3); }
+.stack-item .tag.s4 { background: var(--s4); }
+.stack-item .tag.s5 { background: var(--s5); }
+
+/* Animazioni CSS */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.slide-in {
+  opacity: 0;
+  transform: translateX(30px);
+  animation: slideInFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--delay);
+}
+
+@keyframes slideInFade {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
