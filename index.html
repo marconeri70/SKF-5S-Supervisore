@@ -91,8 +91,12 @@
 </main>
 
 <footer class="safe-bottom">
-  <button id="btn-export-supervisor" class="btn huge outline">Esporta dati per Supervisore (PIN)</button>
-  <div class="version">v2.5.1 • PWA ready</div>
+  <button id="btn-import" class="btn huge primary" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 1.1rem;">
+    <span>📥</span> Importa Dati Operatori
+  </button>
+  <input id="import-input" type="file" accept="application/json,.json" multiple hidden>
+  
+  <div class="version">v2.6.0 • PWA ready</div>
 </footer>
 
 <dialog id="pinDialog" class="modal">
