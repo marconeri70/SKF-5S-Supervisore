@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.5.2 (Media in Home & Scanner Note)
+// SKF 5S — Supervisor v2.6.0 (Import Fix & Operatore)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -72,6 +72,7 @@ function formatNoteText(text) {
 // ===============================
 function renderHome(){
   const wrap = $('#board-all');
+  const dashboardSection = $('#dashboard-section');
   if (!wrap) return;
 
   const data = store.load();
@@ -80,6 +81,13 @@ function renderHome(){
 
   const groups = getGroupedAndSortedData(data.filter(filt));
   wrap.innerHTML = '';
+
+  // Mostra la Hero section solo se non ci sono dati
+  if (groups.length === 0 && dashboardSection) {
+    dashboardSection.hidden = false;
+  } else if (dashboardSection) {
+    dashboardSection.hidden = true;
+  }
 
   for (const [key, arr] of groups){
     const last = arr.sort((a,b)=> new Date(a.date) - new Date(b.date)).slice(-1)[0] || {};
@@ -106,7 +114,6 @@ function renderHome(){
     const card = document.createElement('div');
     card.className = 'mini-card';
     
-    // QUI LA MODIFICA: Aggiunto il badge della Media nell'intestazione
     card.innerHTML = `
       <h5>
         ${ch} 
@@ -154,6 +161,7 @@ function renderChecklist(){
     const last = arr.sort((a,b)=> new Date(a.date) - new Date(b.date)).slice(-1)[0] || {};
     const ch = last.channel || last.ch || last.name || 'CH ?';
     const area = last.area || '';
+    const operator = last.operator ? `<div class="muted">👤 Operatore: ${last.operator}</div>` : '';
     const p = last.points || {s1:0,s2:0,s3:0,s4:0,s5:0};
 
     let delayedS = [];
@@ -180,7 +188,8 @@ function renderChecklist(){
       <div class="top">
         <div>
           <div class="ttl"><strong>${ch}</strong></div>
-          <div class="muted">${area.toUpperCase()} • Ultimo: ${last.date || '-'}</div>
+          <div class="muted">${area.toUpperCase()} • Ultimo: ${new Date(last.date).toLocaleDateString('it-IT')}</div>
+          ${operator}
         </div>
         <div class="pills">
           <span class="pill s1">S1 ${toPct(p.s1)}%</span>
@@ -300,7 +309,7 @@ function renderAlerts() {
         <div class="top">
           <div>
             <div class="ttl" style="color:#b91c1c;"><strong>${card.ch}</strong></div>
-            <div class="muted">${card.area} • Ultimo Controllo: ${card.raw.date || '-'}</div>
+            <div class="muted">${card.area} • Ultimo Controllo: ${new Date(card.raw.date).toLocaleDateString('it-IT')}</div>
             <div style="margin-top:6px;">${sBadges}</div>
           </div>
           <a class="btn primary" href="notes.html?hlCh=${encodeURIComponent(card.ch)}&hlArea=${encodeURIComponent(card.area)}&openS=${openSParams}" style="background:#ef4444; border:none; color:#fff;">Vai al Dettaglio →</a>
@@ -379,6 +388,7 @@ function renderNotes() {
     filtered.forEach(r => {
       const nomeCH = r.ch || r.channel || r.name || 'CH ?';
       const rArea = (r.area || '').toUpperCase();
+      const rOp = r.operator ? `<span style="display:inline-block; margin-left:8px; color:var(--skf);">👤 ${r.operator}</span>` : '';
       const isTargetCard = (urlCh && urlArea && nomeCH.toLowerCase() === urlCh.toLowerCase() && rArea === urlArea.toUpperCase());
       
       let notesHtml = '';
@@ -387,7 +397,6 @@ function renderNotes() {
         for (const [k, v] of Object.entries(r.notes)) {
           if (v && String(v).trim()) {
             const sNum = k.replace('s', ''); 
-            
             const pScore = r.points && r.points[k] !== undefined ? Number(r.points[k]) : 5;
             const sDate = r.dates && r.dates[k] ? new Date(r.dates[k]) : null;
             const isDelayed = sDate && ((new Date() - sDate) > 7 * 24 * 60 * 60 * 1000);
@@ -400,7 +409,6 @@ function renderNotes() {
             if (isSub100) alertReasonHtml += `<div class="alert-reason">📉 Punteggio non pieno: ${pScore}/5</div>`;
 
             const sColor = `var(--${k.toLowerCase()}, #0d63d6)`;
-            
             let formattedText = formatNoteText(v);
 
             notesHtml += `
@@ -433,7 +441,7 @@ function renderNotes() {
         <summary class="master-summary">
           <div style="display:flex; flex-direction:column; gap:2px;">
             <span style="font-size:1.15rem; font-weight:800; color:var(--ink);">${nomeCH}</span>
-            <span style="font-size:0.85rem; font-weight:600; color:var(--muted); letter-spacing:0.5px;">${rArea} • ${dataStringa}</span>
+            <span style="font-size:0.85rem; font-weight:600; color:var(--muted); letter-spacing:0.5px;">${rArea} • ${dataStringa} ${rOp}</span>
           </div>
           <span style="font-size:1.5rem; color:#cbd5e1; font-weight:bold;">${masterDetails.open ? '−' : '+'}</span>
         </summary>
@@ -453,7 +461,6 @@ function renderNotes() {
     if(counter) counter.textContent = `(${filtered.length})`;
     if(countSpan) countSpan.textContent = `(${filtered.length})`;
 
-    // Auto-scroll
     setTimeout(() => {
         const target = document.getElementById('target-note-card');
         if (target) {
@@ -477,124 +484,81 @@ function renderNotes() {
 }
 
 // ===============================
-// IMPORTAZIONE JSON
+// IMPORTAZIONE JSON (Migliorata e Infallibile)
 // ===============================
 function setupImport() {
-  const btnImports = document.querySelectorAll('#btn-import');
-  const inputImports = document.querySelectorAll('#import-input');
+  // Crea un input file globale e invisibile per aggirare i problemi di HTML duplicato
+  let fileInput = document.getElementById('global-import-input');
+  if (!fileInput) {
+    fileInput = document.createElement('input');
+    fileInput.id = 'global-import-input';
+    fileInput.type = 'file';
+    fileInput.accept = 'application/json,.json';
+    fileInput.multiple = true;
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+  }
 
-  if (btnImports.length === 0 || inputImports.length === 0) return;
+  // Collega l'input file a TUTTI i bottoni di importazione presenti sulla pagina
+  const importBtns = document.querySelectorAll('#btn-import, .btn-import, #btn-import-supervisor');
+  importBtns.forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      fileInput.click();
+    };
+  });
 
-  btnImports.forEach((btn, index) => {
-    const input = inputImports[index];
-    if(input) {
-      btn.addEventListener('click', () => input.click());
-      
-      input.addEventListener('change', async (event) => {
-        const files = event.target.files;
-        if (!files || files.length === 0) return;
+  // Logica di caricamento file
+  fileInput.addEventListener('change', async (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-        let existingData = store.load();
-        let newRecordsAdded = 0;
+    let existingData = store.load();
+    let newRecordsAdded = 0;
 
-        for (const file of files) {
-          try {
-            const text = await file.text();
-            const importedData = JSON.parse(text);
-            const records = Array.isArray(importedData) ? importedData : [importedData];
+    for (const file of files) {
+      try {
+        const text = await file.text();
+        const importedData = JSON.parse(text);
+        const records = Array.isArray(importedData) ? importedData : [importedData];
 
-            records.forEach(record => {
-              if (record && (record.ch || record.channel || record.name)) {
-                const isDuplicate = existingData.some(ex => 
-                  (ex.ch === record.ch || ex.channel === record.channel || ex.name === record.name) &&
-                  (ex.area === record.area) && 
-                  (ex.date === record.date)
-                );
-                if (!isDuplicate) {
-                  existingData.push(record);
-                  newRecordsAdded++;
-                }
-              }
-            });
-          } catch (err) {
-            console.error("Errore JSON:", err);
-            alert(`Errore lettura file.`);
+        records.forEach(record => {
+          if (record && (record.ch || record.channel || record.name)) {
+            // Verifica duplicati esatti in base alla data precisa
+            const isDuplicate = existingData.some(ex => 
+              (ex.ch === record.ch || ex.channel === record.channel || ex.name === record.name) &&
+              (ex.area === record.area) && 
+              (ex.date === record.date)
+            );
+            if (!isDuplicate) {
+              existingData.push(record);
+              newRecordsAdded++;
+            }
           }
-        }
+        });
+      } catch (err) {
+        console.error("Errore JSON:", err);
+        alert(`Errore lettura file ${file.name}.`);
+      }
+    }
 
-        localStorage.setItem(store.KEY, JSON.stringify(existingData));
-        input.value = '';
+    localStorage.setItem(store.KEY, JSON.stringify(existingData));
+    fileInput.value = ''; // Resetta l'input per permettere re-importazioni
 
-        if (newRecordsAdded > 0) {
-          alert(`✅ Importazione completata! Aggiunti ${newRecordsAdded} controlli.`);
-          location.reload();
-        } else {
-          alert("ℹ️ Nessun nuovo dato. File già presenti.");
-        }
-      });
+    if (newRecordsAdded > 0) {
+      alert(`✅ Importazione completata! Aggiunti ${newRecordsAdded} nuovi controlli.`);
+      location.reload();
+    } else {
+      alert("ℹ️ Nessun nuovo dato inserito. I file selezionati erano già presenti nel sistema.");
     }
   });
-}
-
-// ===============================
-// ESPORTAZIONE E SICUREZZA (PIN)
-// ===============================
-function setupSecurity() {
-  const pinDialog = document.getElementById('pinDialog');
-  const pinInput = document.getElementById('pinInput');
-  const btnConfirmPin = document.getElementById('btn-confirm-pin');
-  const btnCancelPin = document.getElementById('btn-cancel-pin');
-  
-  const lockBtn = document.getElementById('btn-lock');
-  const exportTopBtn = document.getElementById('btn-export');
-  const exportBottomBtn = document.getElementById('btn-export-supervisor');
-
-  const CORRECT_PIN = "6170";
-
-  function openPinDialog(onSuccess) {
-    if (!pinDialog) return;
-    pinInput.value = '';
-    pinDialog.showModal();
-    
-    btnConfirmPin.onclick = () => {
-      if (pinInput.value === CORRECT_PIN) {
-        pinDialog.close();
-        onSuccess();
-      } else {
-        alert("❌ PIN Errato! Riprova.");
-        pinInput.value = '';
-      }
-    };
-    
-    btnCancelPin.onclick = () => pinDialog.close();
-  }
-
-  function exportData() {
-    const data = store.load();
-    if (data.length === 0) {
-      alert("ℹ️ Nessun dato presente da esportare.");
-      return;
-    }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `SKF_5S_Backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  if (exportTopBtn) exportTopBtn.onclick = () => openPinDialog(exportData);
-  if (exportBottomBtn) exportBottomBtn.onclick = () => openPinDialog(exportData);
-  if (lockBtn) lockBtn.onclick = () => openPinDialog(() => alert("✅ Area Sbloccata con successo!"));
 }
 
 // ===============================
 // Avvio
 // ===============================
 onReady(()=>{
-  if (typeof setupImport === 'function') setupImport();
-  setupSecurity();
+  setupImport();
 
   const printAllBtn = document.getElementById('btn-print-all');
   if (printAllBtn) printAllBtn.onclick = () => window.print();
