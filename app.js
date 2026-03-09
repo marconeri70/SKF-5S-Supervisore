@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.7.0 (Stampa PDF Singola Avanzata)
+// SKF 5S — Supervisor v2.8.0 (Stampa Singola Infallibile)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -263,35 +263,26 @@ function renderChecklist(){
       };
     }
 
-    // Gestione Infallibile della Stampa PDF Singola
+    // GESTIONE INFALLIBILE STAMPA SINGOLA
     const btnPrint = card.querySelector('.btn-print');
     if (btnPrint) {
       btnPrint.onclick = () => {
         
-        // 1. Spegne via JS tutte le altre schede per impedire che vengano stampate
-        const allCards = document.querySelectorAll('.card-line');
-        allCards.forEach(c => {
+        // 1. Nascondiamo fisicamente TUTTE le altre schede
+        document.querySelectorAll('.card-line').forEach(c => {
           if (c !== card) {
-            c.dataset.oldDisplay = c.style.display;
             c.style.display = 'none';
           }
         });
 
-        // 2. Forza l'apertura dei grafici e del blocco Note della scheda selezionata
+        // 2. Apriamo i grafici e le note di QUESTA scheda
         card.classList.remove('compact');
         if (notesDiv) notesDiv.style.display = 'block';
-        
-        // 3. Richiama il box di stampa/Salvataggio PDF del browser
-        window.print();
 
-        // 4. Ripristina il layout normale mezzo secondo dopo
+        // 3. Aspettiamo un attimo per dare il tempo al browser di nascondere le cose, poi stampiamo
         setTimeout(() => {
-          allCards.forEach(c => {
-            if (c !== card) {
-              c.style.display = c.dataset.oldDisplay || '';
-            }
-          });
-        }, 500);
+          window.print();
+        }, 300);
       };
     }
   }
@@ -606,17 +597,27 @@ function setupImport() {
 onReady(()=>{
   setupImport();
 
+  // MAGIC TRICK: "afterprint" scatta automaticamente quando l'utente chiude la finestra del PDF!
+  window.addEventListener('afterprint', () => {
+    // Facciamo riapparire tutte le schede nascoste precedentemente
+    document.querySelectorAll('.card-line').forEach(c => {
+      c.style.display = '';
+    });
+  });
+
   // Gestore per la stampa GLOBALE (Tutti i CH con Note)
   const printAllBtn = document.getElementById('btn-print-all');
   if (printAllBtn) {
     printAllBtn.onclick = () => {
       // Espande tutti i grafici e tutte le note
       document.querySelectorAll('.card-line').forEach(el => {
+        el.style.display = ''; // Assicura che siano visibili
         el.classList.remove('compact');
         const notesDiv = el.querySelector('.ch-detailed-notes');
         if (notesDiv) notesDiv.style.display = 'block';
       });
-      window.print();
+      // Leggero ritardo per preparare i dati
+      setTimeout(() => { window.print(); }, 300);
     };
   }
 
