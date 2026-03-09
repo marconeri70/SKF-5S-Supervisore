@@ -9,7 +9,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 /* Appbar */
 .appbar{position:sticky;top:0;z-index:10;background:#0d63d6;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px}
 .brand{display:flex;align-items:center;gap:8px}
-.brand-logo{height:22px}
+.brand-logo{height:38px}
 .brand-title{font-weight:700}
 .brand-badge{background:#0b4fb0;border-radius:999px;padding:2px 8px}
 .actions{display:flex;gap:8px;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -144,7 +144,15 @@ details.alert-box[open] summary {
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
 /* Footer */
-.safe-bottom{position:sticky;bottom:0;background:linear-gradient(180deg, rgba(246,249,255,0), rgba(246,249,255,1) 28%, rgba(246,249,255,1));padding:10px 10px 16px;display:grid;place-items:center}
+.safe-bottom { 
+  position: sticky; 
+  bottom: 0; 
+  background: var(--bg); /* Usa lo stesso colore di sfondo dell'app */
+  padding: 12px 16px 16px 16px; 
+  z-index: 100; /* Impedisce alle schede di passargli sopra */
+  border-top: 1px solid #dfe6f4;
+}
+
 .version{color:var(--muted);font-size:12px;margin-top:6px}
 
 /* REGOLE PER STAMPA E PDF */
