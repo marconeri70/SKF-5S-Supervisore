@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.8.0 (Stampa Singola Infallibile)
+// SKF 5S — Supervisor v2.9.1 (Completo e Infallibile)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -263,23 +263,24 @@ function renderChecklist(){
       };
     }
 
-    // GESTIONE INFALLIBILE STAMPA SINGOLA
+    // GESTIONE INFALLIBILE STAMPA SINGOLA (CSS Method)
     const btnPrint = card.querySelector('.btn-print');
     if (btnPrint) {
       btnPrint.onclick = () => {
+        // Imposta la modalità "stampa singola" per il CSS
+        document.body.dataset.printMode = 'single';
         
-        // 1. Nascondiamo fisicamente TUTTE le altre schede
+        // Toglie il bollino a tutti
         document.querySelectorAll('.card-line').forEach(c => {
-          if (c !== card) {
-            c.style.display = 'none';
-          }
+          c.classList.remove('print-target');
         });
 
-        // 2. Apriamo i grafici e le note di QUESTA scheda
+        // Mette il bollino solo a questa scheda e la espande
+        card.classList.add('print-target');
         card.classList.remove('compact');
         if (notesDiv) notesDiv.style.display = 'block';
 
-        // 3. Aspettiamo un attimo per dare il tempo al browser di nascondere le cose, poi stampiamo
+        // Stampa
         setTimeout(() => {
           window.print();
         }, 300);
@@ -299,7 +300,7 @@ function renderChecklist(){
 }
 
 // ===============================
-// PANNELLO ALLERTE E NOTE (Invariati)
+// PANNELLO ALLERTE
 // ===============================
 function renderAlerts() {
   const list = $('#alerts-list');
@@ -377,6 +378,9 @@ function renderAlerts() {
   updateAlerts();
 }
 
+// ===============================
+// PANNELLO NOTE
+// ===============================
 function renderNotes() {
   const list = $('#notes-list');
   const counter = $('#notes-counter');
@@ -592,31 +596,36 @@ function setupImport() {
 }
 
 // ===============================
-// Avvio
+// Avvio e CSS Magico di Stampa
 // ===============================
 onReady(()=>{
   setupImport();
 
-  // MAGIC TRICK: "afterprint" scatta automaticamente quando l'utente chiude la finestra del PDF!
-  window.addEventListener('afterprint', () => {
-    // Facciamo riapparire tutte le schede nascoste precedentemente
-    document.querySelectorAll('.card-line').forEach(c => {
-      c.style.display = '';
-    });
-  });
+  // INIEZIONE CSS MAGICO: Questo codice risolve definitivamente il problema su Android!
+  const printStyle = document.createElement('style');
+  printStyle.innerHTML = `
+    @media print {
+      /* Se siamo in modalità singola, la stampante ignorerà FISICAMENTE tutte le schede senza il bollino print-target */
+      body[data-print-mode="single"] .card-line:not(.print-target) {
+        display: none !important;
+      }
+    }
+  `;
+  document.head.appendChild(printStyle);
 
   // Gestore per la stampa GLOBALE (Tutti i CH con Note)
   const printAllBtn = document.getElementById('btn-print-all');
   if (printAllBtn) {
     printAllBtn.onclick = () => {
+      // Imposta la modalità "tutti", annullando la regola di nascondere gli altri
+      document.body.dataset.printMode = 'all';
+
       // Espande tutti i grafici e tutte le note
       document.querySelectorAll('.card-line').forEach(el => {
-        el.style.display = ''; // Assicura che siano visibili
         el.classList.remove('compact');
         const notesDiv = el.querySelector('.ch-detailed-notes');
         if (notesDiv) notesDiv.style.display = 'block';
       });
-      // Leggero ritardo per preparare i dati
       setTimeout(() => { window.print(); }, 300);
     };
   }
