@@ -242,3 +242,48 @@ details.alert-box[open] summary {
   }
 }
 
+/* =========================================
+   STAMPA E GENERAZIONE PDF (REPORTING)
+========================================= */
+@media print {
+  /* Imposta la dimensione del foglio A4 e i margini */
+  @page { margin: 15mm; size: A4 portrait; }
+  
+  /* Sfondo bianco e testo nero per massima leggibilità */
+  body { background: #fff !important; color: #000 !important; }
+  
+  /* Nasconde tutti gli elementi dell'App (Menu, Bottoni, ecc.) */
+  .appbar, .topbar, .actions, .btn, footer, .safe-bottom, dialog, #import-input, .f-actions, .filters-grid { 
+    display: none !important; 
+  }
+  
+  .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+  
+  /* Formatta le schede (card) per non farsi tagliare a metà tra due pagine */
+  .card, .card-line, .master-details { 
+    box-shadow: none !important; 
+    border: 1px solid #cbd5e1 !important; 
+    page-break-inside: avoid; 
+    margin-bottom: 24px !important; 
+    background: #fff !important;
+  }
+  
+  /* Forza i browser a stampare i colori di sfondo (fondamentale per i grafici) */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* SEGRETO: Se clicchi "Stampa PDF" su un SOLO canale, nasconde temporaneamente tutti gli altri */
+  body.print-single .card-line:not(.print-target) { 
+    display: none !important; 
+  }
+  
+  /* Forza l'espansione dei dettagli nelle Note per far leggere tutto nel PDF */
+  details { display: block !important; }
+  details > div { display: block !important; max-height: none !important; overflow: visible !important; border: none !important; }
+  summary::-webkit-details-marker { display: none !important; }
+  
+  .sheet-graph { margin-top: 15px !important; }
+}
+
