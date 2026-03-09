@@ -561,8 +561,14 @@ function setupImport() {
 onReady(()=>{
   setupImport();
 
-  const printAllBtn = document.getElementById('btn-print-all');
-  if (printAllBtn) printAllBtn.onclick = () => window.print();
+     const printAllBtn = document.getElementById('btn-print-all');
+     if (printAllBtn) {
+     printAllBtn.onclick = () => {
+     // Prima di stampare tutto, espande tutte le schede compresse
+      document.querySelectorAll('.card-line').forEach(el => el.classList.remove('compact'));
+      window.print(); // Apre la schermata "Salva come PDF" o Stampa
+    };
+  }
 
   const page = (document.body.dataset.page || '').toLowerCase();
   if (page === 'home') renderHome();
