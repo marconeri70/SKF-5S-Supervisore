@@ -596,10 +596,49 @@ function setupImport() {
 }
 
 // ===============================
+// SICUREZZA E PIN
+// ===============================
+function setupSecurity() {
+  const lockBtn = document.getElementById('btn-lock');
+  const pinDialog = document.getElementById('pinDialog');
+  const pinInput = document.getElementById('pinInput');
+  const btnCancelPin = document.getElementById('pinCancel') || pinDialog?.querySelector('.outline');
+  const btnConfirmPin = document.getElementById('pinConfirmBtn') || pinDialog?.querySelector('.primary');
+
+  if (lockBtn && pinDialog) {
+    lockBtn.onclick = () => {
+      pinDialog.showModal();
+    };
+  }
+
+  if (btnCancelPin) {
+    btnCancelPin.onclick = (e) => {
+      e.preventDefault();
+      pinDialog.close();
+    };
+  }
+
+  if (btnConfirmPin) {
+    btnConfirmPin.onclick = (e) => {
+      e.preventDefault();
+      if (pinInput && pinInput.value === '6170') { // Il tuo PIN di default
+        alert("✅ Area sbloccata con successo!");
+        pinDialog.close();
+        pinInput.value = '';
+      } else {
+        alert("❌ PIN Errato! Riprova.");
+        if (pinInput) pinInput.value = '';
+      }
+    };
+  }
+}
+
+// ===============================
 // Avvio e CSS Magico di Stampa
 // ===============================
 onReady(()=>{
   setupImport();
+  setupSecurity();
 
   // INIEZIONE CSS MAGICO: Questo codice risolve definitivamente il problema su Android!
   const printStyle = document.createElement('style');
