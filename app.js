@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.6.0 (Import Fix & Operatore)
+// SKF 5S — Supervisor v2.7.0 (Stampa PDF Singola Avanzata)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -46,7 +46,7 @@ function getGroupedAndSortedData(dataFilter) {
   });
 }
 
-// FORMATTAZIONE INTELLIGENTE NOTE (Evidenzia di rosso le righe con 0, 1 e 3)
+// FORMATTAZIONE INTELLIGENTE NOTE (Evidenzia righe con punteggio basso)
 function formatNoteText(text) {
   if (!text) return '';
   const lines = text.split('\n');
@@ -82,7 +82,6 @@ function renderHome(){
   const groups = getGroupedAndSortedData(data.filter(filt));
   wrap.innerHTML = '';
 
-  // Mostra la Hero section solo se non ci sono dati
   if (groups.length === 0 && dashboardSection) {
     dashboardSection.hidden = false;
   } else if (dashboardSection) {
@@ -147,7 +146,7 @@ function renderHome(){
 }
 
 // ===============================
-// CHECKLIST
+// CHECKLIST & GENERATORE REPORT PDF
 // ===============================
 function renderChecklist(){
   const listMount = $('#cards');
@@ -180,6 +179,35 @@ function renderChecklist(){
         ? `<div style="text-align:center; margin-top:10px;"><a href="notes.html?hlCh=${encodeURIComponent(ch)}&hlArea=${encodeURIComponent(area)}&openS=${delayedS.join(',')}" class="delay-btn">⚠️ Vedi note ritardo (${delayedS.map(s=>s+'S').join(', ')})</a></div>`
         : '';
 
+    // CREAZIONE DEL SUPER-REPORT DELLE NOTE (Da includere nel PDF)
+    let notesHtml = '';
+    if (typeof last.notes === 'object') {
+      for (let i = 1; i <= 5; i++) {
+        const k = `s${i}`;
+        const v = last.notes[k];
+        if (v && String(v).trim()) {
+           const pScore = p[k] !== undefined ? Number(p[k]) : 5;
+           const sDate = last.dates && last.dates[k] ? new Date(last.dates[k]) : null;
+           const isDelayed = sDate && ((new Date() - sDate) > 7 * 24 * 60 * 60 * 1000);
+           const isSub100 = pScore < 5;
+           const isAlert = isDelayed || isSub100;
+           
+           let alertBadge = '';
+           if(isDelayed) alertBadge += `<span style="background:#ef4444; color:#fff; padding:2px 8px; border-radius:12px; font-size:0.75rem; margin-left:8px; font-weight:bold;">⏱️ RITARDO COMPILAZIONE</span>`;
+           if(isSub100) alertBadge += `<span style="background:#f59e0b; color:#fff; padding:2px 8px; border-radius:12px; font-size:0.75rem; margin-left:8px; font-weight:bold;">⚠️ Punteggio: ${pScore}/5</span>`;
+
+           notesHtml += `
+             <div style="margin-top: 12px; padding: 14px; border: 2px solid ${isAlert ? '#fca5a5' : '#e2e8f0'}; border-radius: 12px; background: ${isAlert ? '#fef2f2' : '#f8fafc'}; page-break-inside: avoid;">
+               <div style="font-weight: 800; color: ${isAlert ? '#ef4444' : '#0a57d5'}; border-bottom: 2px solid ${isAlert ? '#fecaca' : '#e2e8f0'}; padding-bottom: 8px; margin-bottom: 10px; display:flex; align-items:center; font-size: 1.1rem;">
+                 ${k.toUpperCase()} ${alertBadge}
+               </div>
+               <div style="font-size: 0.95rem; color: #334155; line-height: 1.6;">${formatNoteText(v)}</div>
+             </div>
+           `;
+        }
+      }
+    }
+
     const card = document.createElement('section');
     card.className = 'card-line';
     card.id = `CH-${ch}`;
@@ -188,7 +216,7 @@ function renderChecklist(){
       <div class="top">
         <div>
           <div class="ttl"><strong>${ch}</strong></div>
-          <div class="muted">${area.toUpperCase()} • Ultimo: ${new Date(last.date).toLocaleDateString('it-IT')}</div>
+          <div class="muted">${area.toUpperCase()} • Ultimo Controllo: ${new Date(last.date).toLocaleDateString('it-IT')}</div>
           ${operator}
         </div>
         <div class="pills">
@@ -200,9 +228,8 @@ function renderChecklist(){
           <span class="pill avg">Media ${meanPct(p)}%</span>
         </div>
         <div class="btns">
-          <button class="btn outline btn-print">Stampa PDF</button>
-          <button class="btn outline btn-toggle">Comprimi/Espandi</button>
-          <a class="btn ghost" href="notes.html?hlCh=${encodeURIComponent(ch)}&hlArea=${encodeURIComponent(area)}">Vedi note</a>
+          <button class="btn outline btn-print" style="border-color: #0a57d5; color: #0a57d5; font-weight: bold;">🖨️ Stampa Report PDF</button>
+          <button class="btn outline btn-toggle">Mostra Note</button>
         </div>
       </div>
       <div class="mini-bars sheet-graph">
@@ -215,28 +242,61 @@ function renderChecklist(){
       </div>
       <div class="mini-scale"><span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span><span>Ritardi</span></div>
       ${delayBtn}
+
+      <div class="ch-detailed-notes" style="display: none; margin-top: 24px; border-top: 2px dashed #cbd5e1; padding-top: 16px;">
+        <h4 style="margin:0 0 10px 0; color:var(--ink); font-size: 1.2rem;">📝 Dettaglio Note ed Evidenze</h4>
+        ${notesHtml || '<div class="muted" style="padding: 10px; background: #f8fafc; border-radius: 8px;">Nessuna nota compilata per questo controllo.</div>'}
+      </div>
     `;
 
     listMount.appendChild(card);
 
+    // Gestione Bottone "Mostra Note"
     const tgl = card.querySelector('.btn-toggle');
-    if (tgl) tgl.onclick = () => card.classList.toggle('compact');
+    const notesDiv = card.querySelector('.ch-detailed-notes');
+    if (tgl) {
+      tgl.onclick = () => {
+         card.classList.toggle('compact');
+         if (notesDiv) {
+           notesDiv.style.display = notesDiv.style.display === 'none' ? 'block' : 'none';
+         }
+      };
+    }
 
+    // Gestione Infallibile della Stampa PDF Singola
     const btnPrint = card.querySelector('.btn-print');
     if (btnPrint) {
       btnPrint.onclick = () => {
-        card.classList.remove('compact'); // Forza l'espansione per mostrare i grafici nel PDF
-        document.body.classList.add('print-single');
-        card.classList.add('print-target');
-        window.print(); // Apre la schermata "Salva come PDF" o Stampa
+        
+        // 1. Spegne via JS tutte le altre schede per impedire che vengano stampate
+        const allCards = document.querySelectorAll('.card-line');
+        allCards.forEach(c => {
+          if (c !== card) {
+            c.dataset.oldDisplay = c.style.display;
+            c.style.display = 'none';
+          }
+        });
+
+        // 2. Forza l'apertura dei grafici e del blocco Note della scheda selezionata
+        card.classList.remove('compact');
+        if (notesDiv) notesDiv.style.display = 'block';
+        
+        // 3. Richiama il box di stampa/Salvataggio PDF del browser
+        window.print();
+
+        // 4. Ripristina il layout normale mezzo secondo dopo
         setTimeout(() => {
-          document.body.classList.remove('print-single');
-          card.classList.remove('print-target');
+          allCards.forEach(c => {
+            if (c !== card) {
+              c.style.display = c.dataset.oldDisplay || '';
+            }
+          });
         }, 500);
       };
     }
- }
+  }
 
+  // Scorrimento automatico se provieni da un'altra pagina
   const hlCh = new URL(location.href).searchParams.get('hlCh');
   if (hlCh){
     const el = document.getElementById(`CH-${hlCh}`);
@@ -248,7 +308,7 @@ function renderChecklist(){
 }
 
 // ===============================
-// PANNELLO ALLERTE (< 100%)
+// PANNELLO ALLERTE E NOTE (Invariati)
 // ===============================
 function renderAlerts() {
   const list = $('#alerts-list');
@@ -326,9 +386,6 @@ function renderAlerts() {
   updateAlerts();
 }
 
-// ===============================
-// NOTE (Con Classi Rosse per Allerte)
-// ===============================
 function renderNotes() {
   const list = $('#notes-list');
   const counter = $('#notes-counter');
@@ -461,14 +518,6 @@ function renderNotes() {
 
     if(counter) counter.textContent = `(${filtered.length})`;
     if(countSpan) countSpan.textContent = `(${filtered.length})`;
-
-    setTimeout(() => {
-        const target = document.getElementById('target-note-card');
-        if (target) {
-            target.scrollIntoView({behavior: 'smooth', block: 'start'});
-            target.classList.add('flash-target'); 
-        }
-    }, 400); 
   }
 
   if (btnApply) btnApply.onclick = updateNotes;
@@ -485,10 +534,9 @@ function renderNotes() {
 }
 
 // ===============================
-// IMPORTAZIONE JSON (Migliorata e Infallibile)
+// IMPORTAZIONE JSON
 // ===============================
 function setupImport() {
-  // Crea un input file globale e invisibile per aggirare i problemi di HTML duplicato
   let fileInput = document.getElementById('global-import-input');
   if (!fileInput) {
     fileInput = document.createElement('input');
@@ -500,7 +548,6 @@ function setupImport() {
     document.body.appendChild(fileInput);
   }
 
-  // Collega l'input file a TUTTI i bottoni di importazione presenti sulla pagina
   const importBtns = document.querySelectorAll('#btn-import, .btn-import, #btn-import-supervisor');
   importBtns.forEach(btn => {
     btn.onclick = (e) => {
@@ -509,7 +556,6 @@ function setupImport() {
     };
   });
 
-  // Logica di caricamento file
   fileInput.addEventListener('change', async (event) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -525,7 +571,6 @@ function setupImport() {
 
         records.forEach(record => {
           if (record && (record.ch || record.channel || record.name)) {
-            // Verifica duplicati esatti in base alla data precisa
             const isDuplicate = existingData.some(ex => 
               (ex.ch === record.ch || ex.channel === record.channel || ex.name === record.name) &&
               (ex.area === record.area) && 
@@ -544,7 +589,7 @@ function setupImport() {
     }
 
     localStorage.setItem(store.KEY, JSON.stringify(existingData));
-    fileInput.value = ''; // Resetta l'input per permettere re-importazioni
+    fileInput.value = '';
 
     if (newRecordsAdded > 0) {
       alert(`✅ Importazione completata! Aggiunti ${newRecordsAdded} nuovi controlli.`);
@@ -561,12 +606,17 @@ function setupImport() {
 onReady(()=>{
   setupImport();
 
-     const printAllBtn = document.getElementById('btn-print-all');
-     if (printAllBtn) {
-     printAllBtn.onclick = () => {
-     // Prima di stampare tutto, espande tutte le schede compresse
-      document.querySelectorAll('.card-line').forEach(el => el.classList.remove('compact'));
-      window.print(); // Apre la schermata "Salva come PDF" o Stampa
+  // Gestore per la stampa GLOBALE (Tutti i CH con Note)
+  const printAllBtn = document.getElementById('btn-print-all');
+  if (printAllBtn) {
+    printAllBtn.onclick = () => {
+      // Espande tutti i grafici e tutte le note
+      document.querySelectorAll('.card-line').forEach(el => {
+        el.classList.remove('compact');
+        const notesDiv = el.querySelector('.ch-detailed-notes');
+        if (notesDiv) notesDiv.style.display = 'block';
+      });
+      window.print();
     };
   }
 
