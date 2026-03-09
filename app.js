@@ -596,7 +596,7 @@ function setupImport() {
 }
 
 // ===============================
-// SICUREZZA E PIN
+// SICUREZZA E ESPORTAZIONE DATI
 // ===============================
 function setupSecurity() {
   const lockBtn = document.getElementById('btn-lock');
@@ -605,26 +605,63 @@ function setupSecurity() {
   const btnCancelPin = document.getElementById('pinCancel') || pinDialog?.querySelector('.outline');
   const btnConfirmPin = document.getElementById('pinConfirmBtn') || pinDialog?.querySelector('.primary');
 
-  if (lockBtn && pinDialog) {
-    lockBtn.onclick = () => {
-      pinDialog.showModal();
-    };
+  // Pulsanti di esportazione
+  const exportTopBtn = document.getElementById('btn-export');
+  const exportBottomBtn = document.getElementById('btn-export-supervisor');
+
+  // Variabile per ricordare cosa fare dopo aver messo il PIN corretto
+  let pendingAction = null;
+
+  function openPinDialog(action) {
+    if (!pinDialog) return;
+    pendingAction = action;
+    if (pinInput) pinInput.value = '';
+    pinDialog.showModal();
   }
 
+  // 1. Azione Lucchetto
+  if (lockBtn) {
+    lockBtn.onclick = () => openPinDialog(() => alert("✅ Area sbloccata con successo!"));
+  }
+
+  // 2. Azione Esportazione Backup JSON
+  function exportData() {
+    const data = store.load();
+    if (data.length === 0) {
+      alert("ℹ️ Nessun dato presente da esportare.");
+      return;
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SKF_5S_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if (exportTopBtn) exportTopBtn.onclick = () => openPinDialog(exportData);
+  if (exportBottomBtn) exportBottomBtn.onclick = () => openPinDialog(exportData);
+
+  // 3. Gestione dei bottoni del Popup PIN
   if (btnCancelPin) {
     btnCancelPin.onclick = (e) => {
       e.preventDefault();
       pinDialog.close();
+      pendingAction = null;
     };
   }
 
   if (btnConfirmPin) {
     btnConfirmPin.onclick = (e) => {
       e.preventDefault();
-      if (pinInput && pinInput.value === '6170') { // Il tuo PIN di default
-        alert("✅ Area sbloccata con successo!");
+      if (pinInput && pinInput.value === '6170') { // PIN di default
         pinDialog.close();
-        pinInput.value = '';
+        if (pinInput) pinInput.value = '';
+        if (pendingAction) {
+          pendingAction(); // Esegue l'esportazione o lo sblocco
+          pendingAction = null;
+        }
       } else {
         alert("❌ PIN Errato! Riprova.");
         if (pinInput) pinInput.value = '';
