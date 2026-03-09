@@ -225,16 +225,17 @@ function renderChecklist(){
     const btnPrint = card.querySelector('.btn-print');
     if (btnPrint) {
       btnPrint.onclick = () => {
+        card.classList.remove('compact'); // Forza l'espansione per mostrare i grafici nel PDF
         document.body.classList.add('print-single');
         card.classList.add('print-target');
-        window.print();
+        window.print(); // Apre la schermata "Salva come PDF" o Stampa
         setTimeout(() => {
           document.body.classList.remove('print-single');
           card.classList.remove('print-target');
         }, 500);
       };
     }
-  }
+ }
 
   const hlCh = new URL(location.href).searchParams.get('hlCh');
   if (hlCh){
