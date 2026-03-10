@@ -9,10 +9,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 /* Appbar */
 .appbar{position:sticky;top:0;z-index:10;background:#0d63d6;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px}
 .brand{display:flex;align-items:center;gap:8px}
-.brand-logo{height:38px}
+.brand-logo{height:28px}
 .brand-title{font-weight:700}
 .brand-badge{background:#0b4fb0;border-radius:999px;padding:2px 8px}
-.actions{display:flex;gap:8px;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch}
 
 /* Buttons */
 .btn{border:0;border-radius:10px;padding:8px 12px;background:#e7efff;color:#0d63d6;font-weight:600;cursor:pointer;white-space:nowrap}
@@ -29,7 +28,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .hero5s{max-width:100%;height:auto}
 .muted{color:var(--muted)}
 
-/* Dashboard Home - Griglia Automatica e Ordinamento */
+/* Dashboard Home */
 .hscroll{overflow:visible;} 
 .board-all{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
 .mini-card{border:1px solid #e5e8ef;border-radius:12px;padding:14px;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.04);transition:transform 0.2s;display:flex;flex-direction:column;justify-content:space-between;}
@@ -44,23 +43,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .mini-bar::before{content:attr(data-val); position:absolute; bottom:calc(var(--h) + 4px); left:0; right:0; text-align:center; font-size:11px; font-weight:800; color:#475569; z-index:2;}
 .mini-scale{display:flex;justify-content:space-between;font-size:12px;color:#334155;font-weight:600;margin-top:4px;}
 .mini-scale span { width: 16.66%; text-align: center; font-size: 11px; }
-
 .open-link{display:block;text-align:center;background:#f6f9ff;font-size:13px;font-weight:600;margin-top:12px;color:#0d63d6;text-decoration:none;padding:8px;border-radius:8px;}
 
-/* Stile per i pulsanti dei Ritardi */
-.delay-btn { 
-  display: inline-block; 
-  border: 1px solid #ef4444; 
-  color: #ef4444; 
-  background: #fee2e2; 
-  padding: 4px 10px; 
-  border-radius: 999px; 
-  font-size: 0.75rem; 
-  font-weight: bold; 
-  text-decoration: none; 
-  margin-top: 8px;
-  text-align: center;
-}
+/* Ritardi */
+.delay-btn { display: inline-block; border: 1px solid #ef4444; color: #ef4444; background: #fee2e2; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: bold; text-decoration: none; margin-top: 8px; text-align: center;}
 
 /* Checklist */
 .card-line{background:#fff;border:1px solid var(--ring);border-radius:14px;padding:12px;margin-bottom:14px}
@@ -73,225 +59,55 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,Seg
 .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .btns .btn { padding: 6px 12px; font-size: 0.85rem; flex-grow: 1; text-align: center; justify-content: center; }
 
-/* ==================================
-   STILI PER FILTRI E NOTE 
-   ================================== */
+/* Filtri e Note */
 .filters-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px;}
 .f-group{display:flex;flex-direction:column;gap:6px;}
 .f-group label{font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
 .f-group select,.f-group input{padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-family:inherit;font-size:0.95rem;background:#f8fafc;outline:none;}
-.f-group select:focus,.f-group input:focus{border-color:#0d63d6;background:#fff;}
 .f-actions{display:flex;gap:10px;}
-
 .master-details{background:#fff;border:1px solid var(--ring);border-radius:14px;margin-bottom:14px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.03);}
 .master-summary{padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#fff;user-select:none;list-style:none;}
 .master-summary::-webkit-details-marker{display:none;}
-.master-summary:hover{background:#f8fafc;}
 .master-details[open] .master-summary{background:#f6f9ff;border-bottom:1px solid var(--ring);}
 .master-body{padding:16px;background:#fdfdfd;}
-
-/* EVIDENZIAZIONE ROSSA PER ALLERTE E RITARDI */
-details.alert-box summary {
-  background: #fef2f2 !important;
-  border-color: #ef4444 !important;
-  color: #991b1b !important;
-}
-details.alert-box[open] summary {
-  background: #fca5a5 !important;
-  color: #7f1d1d !important;
-}
-.alert-reason {
-  font-size: 0.9rem;
-  color: #dc2626;
-  font-weight: 800;
-  margin-bottom: 8px;
-  display: block;
-  text-transform: uppercase;
-  background: #fef2f2;
-  padding: 6px;
-  border-radius: 4px;
-  border-left: 3px solid #dc2626;
-}
+details.alert-box summary { background: #fef2f2 !important; border-color: #ef4444 !important; color: #991b1b !important; }
+details.alert-box[open] summary { background: #fca5a5 !important; color: #7f1d1d !important; }
+.alert-reason { font-size: 0.9rem; color: #dc2626; font-weight: 800; margin-bottom: 8px; display: block; text-transform: uppercase; background: #fef2f2; padding: 6px; border-radius: 4px; border-left: 3px solid #dc2626; }
 .flash-target { outline: 2px solid #ef4444; background-color: #fff6f6 !important; }
-
-/* Evidenziazione singole righe nelle note */
 .note-line { padding: 6px 0; border-bottom: 1px dashed #e2e8f0; margin-bottom: 4px; }
-.note-line:last-child { border-bottom: none; margin-bottom: 0; }
-.note-line.bad-score {
-  background: #fef2f2;
-  padding: 8px;
-  border-radius: 6px;
-  border-left: 4px solid #ef4444;
-  color: #991b1b;
-  font-weight: 500;
-}
+.note-line.bad-score { background: #fef2f2; padding: 8px; border-radius: 6px; border-left: 4px solid #ef4444; color: #991b1b; font-weight: 500; }
 
 /* ==================================
-   STILE FINESTRA PIN (MODAL)
+   MENU A TENDINA (BOTTOM SHEET)
    ================================== */
+.action-sheet { border: 0; padding: 0; background: transparent; margin: auto; max-width: 100vw; max-height: 100vh; width: 100%; height: 100%; justify-content: center; align-items: flex-end; display: none; }
+.action-sheet[open] { display: flex; }
+.action-sheet::backdrop { background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); }
+.sheet-box { background: #fff; width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; overflow: hidden; box-shadow: 0 -4px 20px rgba(0,0,0,0.15); animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+@keyframes slideUp { from{transform: translateY(100%);} to{transform: translateY(0%);} }
+.sheet-header { padding: 18px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+.sheet-grid { padding: 24px; display: grid; grid-template-columns: 1fr; gap: 12px; max-height: 70vh; overflow-y: auto; }
+.sheet-btn { padding: 16px; font-size: 1.1rem; text-align: left; border-radius: 14px; border: 1px solid #cbd5e1; font-weight: 700; background: #fff; color: #334155; display: flex; gap: 12px; align-items: center; cursor: pointer; transition: all 0.2s; }
+.sheet-btn:active { transform: scale(0.98); background: #f1f5f9; }
+.sheet-btn.primary { background: #0d63d6; color: #fff; border-color: #0d63d6; justify-content: center; }
+
+/* Finestra PIN */
 .modal { border: 0; padding: 0; background: transparent; }
 .modal::backdrop { background: rgba(0,0,0,0.5); }
-.modal-box { 
-  background: #fff; border-radius: 16px; padding: 20px; 
-  width: 90vw; max-width: 400px; margin: auto; 
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-}
-.modal-box h4 { margin-top: 0; margin-bottom: 16px; color: #0d63d6; font-size: 1.2rem; }
+.modal-box { background: #fff; border-radius: 16px; padding: 20px; width: 90vw; max-width: 400px; margin: auto; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .field span { font-size: 0.85rem; font-weight: 600; color: #475569; }
 .field input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
 /* Footer */
-.safe-bottom { 
-  position: sticky; 
-  bottom: 0; 
-  background: var(--bg); /* Usa lo stesso colore di sfondo dell'app */
-  padding: 12px 16px 16px 16px; 
-  z-index: 100; /* Impedisce alle schede di passargli sopra */
-  border-top: 1px solid #dfe6f4;
-}
-
+.safe-bottom{position:sticky;bottom:0;background:var(--bg);padding:10px 10px 16px;display:grid;place-items:center; z-index:100;}
 .version{color:var(--muted);font-size:12px;margin-top:6px}
 
 /* REGOLE PER STAMPA E PDF */
 @media print {
-  .appbar, .btns, .delay-btn, .segmented, footer, #btn-print-all, #btn-toggle-all, #btn-lock, #btn-import, #btn-notes { display: none !important; }
+  .appbar, .btns, .delay-btn, .segmented, footer, .action-sheet { display: none !important; }
   body { background: #fff; color: #000; }
   .container { max-width: 100%; padding: 0; margin: 0; }
   .card-line { page-break-inside: avoid; break-inside: avoid; border: 1px solid #000; box-shadow: none; margin-bottom: 20px; }
-  body.print-single .card-line:not(.print-target) { display: none !important; }
 }
-
-/* =========================================
-   HERO SPLIT 50/50 CON ANIMAZIONI (SUPERVISOR) 
-========================================= */
-.hero-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 10px;
-  align-items: center;
-}
-
-.hero-left {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.floating-img {
-  width: 100%;
-  max-width: 130px;
-  height: auto;
-  filter: drop-shadow(0 15px 15px rgba(0,0,0,0.15));
-  animation: float 4s ease-in-out infinite;
-}
-
-.hero-right {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.hero-title {
-  margin: 0 0 6px 0;
-  color: var(--ink);
-  font-size: 1.3rem;
-  font-weight: 800;
-  line-height: 1.1;
-}
-
-.stack-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-.stack-item .tag {
-  display: inline-block;
-  padding: 3px 6px;
-  border-radius: 6px;
-  color: #fff;
-  font-weight: bold;
-  font-size: 0.75rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-.stack-item .desc {
-  font-size: 0.8rem;
-  color: var(--muted);
-  line-height: 1.2;
-}
-
-/* Colori tag specifici per Supervisore */
-.stack-item .tag.s1 { background: var(--s1); }
-.stack-item .tag.s2 { background: var(--s2); }
-.stack-item .tag.s3 { background: var(--s3); }
-.stack-item .tag.s4 { background: var(--s4); }
-.stack-item .tag.s5 { background: var(--s5); }
-
-/* Animazioni CSS */
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-  100% { transform: translateY(0px); }
-}
-
-.slide-in {
-  opacity: 0;
-  transform: translateX(30px);
-  animation: slideInFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: var(--delay);
-}
-
-@keyframes slideInFade {
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* =========================================
-   STAMPA E GENERAZIONE PDF (REPORTING)
-========================================= */
-@media print {
-  /* Imposta la dimensione del foglio A4 e i margini */
-  @page { margin: 15mm; size: A4 portrait; }
-  
-  /* Sfondo bianco e testo nero per massima leggibilità */
-  body { background: #fff !important; color: #000 !important; }
-  
-  /* Nasconde tutti gli elementi dell'App (Menu, Bottoni, ecc.) */
-  .appbar, .topbar, .actions, .btn, footer, .safe-bottom, dialog, #import-input, .f-actions, .filters-grid { 
-    display: none !important; 
-  }
-  
-  .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
-  
-  /* Formatta le schede (card) per non farsi tagliare a metà tra due pagine */
-  .card, .card-line, .master-details { 
-    box-shadow: none !important; 
-    border: 1px solid #cbd5e1 !important; 
-    page-break-inside: avoid; 
-    margin-bottom: 24px !important; 
-    background: #fff !important;
-  }
-  
-  /* Forza i browser a stampare i colori di sfondo (fondamentale per i grafici) */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-  
-  /* SEGRETO: Se clicchi "Stampa PDF" su un SOLO canale, nasconde temporaneamente tutti gli altri */
-  body.print-single .card-line:not(.print-target) { 
-    display: none !important; 
-  }
-  
-  /* Forza l'espansione dei dettagli nelle Note per far leggere tutto nel PDF */
-  details { display: block !important; }
-  details > div { display: block !important; max-height: none !important; overflow: visible !important; border: none !important; }
-  summary::-webkit-details-marker { display: none !important; }
-  
-  .sheet-graph { margin-top: 15px !important; }
-}
-
