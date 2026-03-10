@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v2.9.1 (Completo e Infallibile)
+// SKF 5S — Supervisor v3.0 (Completo + Slide Presentazione)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -671,40 +671,88 @@ function setupSecurity() {
 }
 
 // ===============================
-// Avvio e CSS Magico di Stampa
+// Avvio e Iniezioni CSS Magiche
 // ===============================
 onReady(()=>{
   setupImport();
   setupSecurity();
 
-  // INIEZIONE CSS MAGICO: Questo codice risolve definitivamente il problema su Android!
+  // 1. Regola CSS nativa per la STAMPA SINGOLA infallibile su Android
   const printStyle = document.createElement('style');
   printStyle.innerHTML = `
     @media print {
-      /* Se siamo in modalità singola, la stampante ignorerà FISICAMENTE tutte le schede senza il bollino print-target */
-      body[data-print-mode="single"] .card-line:not(.print-target) {
-        display: none !important;
-      }
+      body[data-print-mode="single"] .card-line:not(.print-target) { display: none !important; }
     }
   `;
   document.head.appendChild(printStyle);
 
-  // Gestore per la stampa GLOBALE (Tutti i CH con Note)
+  // 2. STAMPA GLOBALE (Fascicolo classico A4)
   const printAllBtn = document.getElementById('btn-print-all');
   if (printAllBtn) {
     printAllBtn.onclick = () => {
-      // Imposta la modalità "tutti", annullando la regola di nascondere gli altri
       document.body.dataset.printMode = 'all';
-
-      // Espande tutti i grafici e tutte le note
       document.querySelectorAll('.card-line').forEach(el => {
+        el.style.display = '';
         el.classList.remove('compact');
         const notesDiv = el.querySelector('.ch-detailed-notes');
         if (notesDiv) notesDiv.style.display = 'block';
       });
-      setTimeout(() => { window.print(); }, 300);
+      setTimeout(() => window.print(), 300);
     };
   }
+
+  // 3. NUOVO: PRESENTAZIONE SLIDE Orizzontali
+  const presBtn = document.getElementById('btn-presentation');
+  if (presBtn) {
+    presBtn.onclick = () => {
+      document.body.dataset.printMode = 'all'; 
+      
+      // Creiamo uno stile temporaneo che impagina in orizzontale come PowerPoint
+      const slideStyle = document.createElement('style');
+      slideStyle.id = 'slide-style-temp';
+      slideStyle.innerHTML = `
+        @media print {
+          @page { size: A4 landscape; margin: 15mm; }
+          body { background: #fff !important; }
+          .appbar, .actions, .btns, .btn, .safe-bottom, .filters-grid, .f-actions { display: none !important; }
+          .card-line {
+            page-break-after: always; /* OBBLIGA la stampante a mettere 1 Canale per foglio */
+            border: none !important; box-shadow: none !important;
+            min-height: 85vh !important; 
+            display: flex; flex-direction: column; justify-content: center;
+            margin: 0 !important; padding: 0 20px !important;
+          }
+          /* Ingrandisce a dismisura titoli e voti per la lavagna luminosa */
+          .ttl strong { font-size: 3.5rem !important; color: #0a57d5 !important; line-height: 1.1; }
+          .muted { font-size: 1.3rem !important; margin-bottom: 20px; }
+          .pills { transform: scale(1.4); transform-origin: left center; margin: 30px 0 !important; }
+          .mini-bars { height: 200px !important; margin-top: 40px !important; }
+          .mini-scale span { font-size: 1.3rem !important; font-weight: 800; }
+          .ch-detailed-notes { margin-top: 40px !important; border-top: 4px solid #0a57d5 !important; padding-top: 20px !important; }
+          .ch-detailed-notes h4 { font-size: 1.6rem !important; }
+          .note-line { font-size: 1.1rem !important; }
+        }
+      `;
+      document.head.appendChild(slideStyle);
+
+      // Apriamo grafici e note di tutti i canali
+      document.querySelectorAll('.card-line').forEach(el => {
+        el.style.display = '';
+        el.classList.remove('compact');
+        const notesDiv = el.querySelector('.ch-detailed-notes');
+        if (notesDiv) notesDiv.style.display = 'block';
+      });
+
+      // Richiama la stampa e la converte in PDF. 
+      setTimeout(() => window.print(), 300);
+    };
+  }
+
+  // Trucco di sicurezza: elimina lo stile delle slide appena chiudi l'anteprima PDF
+  window.addEventListener('afterprint', () => {
+    const slideStyle = document.getElementById('slide-style-temp');
+    if (slideStyle) slideStyle.remove();
+  });
 
   const page = (document.body.dataset.page || '').toLowerCase();
   if (page === 'home') renderHome();
