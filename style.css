@@ -105,8 +105,14 @@ details.alert-box[open] summary { background: #fca5a5 !important; color: #7f1d1d
 
 /* REGOLE PER STAMPA */
 @media print {
+  /* COMANDO MAGICO: Forza la stampante a stampare i colori di sfondo (grafici e badge) */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
   .appbar, .btns, .delay-btn, .segmented, footer, .action-sheet, .filters-grid, .f-actions, #btn-print-alerts-all { display: none !important; }
-  body { background: #fff; color: #000; }
+  body { background: #fff !important; color: #000 !important; }
   .container { max-width: 100%; padding: 0; margin: 0; }
   .card-line { page-break-inside: avoid; break-inside: avoid; border: 1px solid #000; box-shadow: none; margin-bottom: 20px; }
 }
