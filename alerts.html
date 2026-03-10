@@ -15,17 +15,19 @@
     <span class="brand-badge" style="background: #ef4444;">Allerte</span>
   </div>
   <nav class="actions">
-    <a href="index.html" class="btn big">← Home</a>
+    <a href="index.html" class="btn outline" style="background:#fff; border:none; padding:8px 12px;">← Home</a>
   </nav>
 </header>
 
 <main class="container">
-  <section class="card" style="border-left: 4px solid #ef4444;">
-    <h3 style="margin-top:0; color: #ef4444;">🚨 Pannello Allerte: Sotto il 100%</h3>
-    <p class="muted small" style="margin-bottom:0;">
-      Qui sono elencati tutti i canali in cui almeno una "S" non ha raggiunto il punteggio massimo (5). 
-      Espandi per vedere il motivo esatto.
-    </p>
+  <section class="card" style="border-left: 4px solid #ef4444; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <div>
+      <h3 style="margin-top:0; color: #ef4444;">🚨 Pannello Allerte: Da Verificare <span id="alerts-count"></span></h3>
+      <p class="muted small" style="margin-bottom:0;">
+        Elenco dei canali con punteggi inferiori a 5 o ritardi di compilazione.
+      </p>
+    </div>
+    <button id="btn-print-alerts-all" class="btn primary" style="background:#ef4444;">🖨️ Stampa Tutte le Allerte</button>
   </section>
 
   <section class="card">
@@ -43,15 +45,12 @@
         <input id="f-ch" type="text" placeholder="Es. CH 11">
       </div>
       <div class="f-actions" style="align-items: flex-end;">
-        <button id="f-apply" class="btn primary" style="height: 42px;">Filtra</button>
+        <button id="f-apply" class="btn outline" style="height: 42px; border-color:#ef4444; color:#ef4444; font-weight:bold;">Applica</button>
       </div>
     </div>
   </section>
 
-  <section class="card" style="background: transparent; box-shadow: none; padding: 0;">
-    <h3 style="margin-top: 10px;">Da Verificare <span id="alerts-count" class="muted"></span></h3>
-    <div id="alerts-list"></div>
-  </section>
+  <div id="alerts-list" class="stack"></div>
 </main>
 
 <script src="app.js"></script>
