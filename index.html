@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Supervisore</title>
+  <title>SKF 5S — Supervisor</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/skf-192.png">
   <meta name="theme-color" content="#0d63d6">
@@ -12,51 +12,29 @@
 <body data-page="home">
 <header class="appbar">
   <div class="brand">
-    <a href="#" class="btn back" aria-label="Indietro" hidden>Indietro</a>
     <img src="assets/skf-logo.png" alt="SKF" class="brand-logo">
     <span class="brand-title">SKF 5S</span>
-    <span class="brand-badge">Supervisore</span>
+    <span class="brand-badge">Supervisor</span>
   </div>
-  <nav class="actions">
-    <a href="alerts.html" class="btn outline" style="color: #ef4444; border-color: #ef4444;">🚨 Allerte Sotto 100%</a>
-    <button id="btn-notes" class="btn ghost" onclick="location.href='notes.html'">Note</button>
-    <button id="btn-import" class="btn primary">Importa</button>
-    <input id="import-input" type="file" accept="application/json,.json" multiple hidden>
-    <button id="btn-export" class="btn outline">Esporta dati (PIN)</button>
-    <button id="btn-lock" class="btn icon" title="Blocco/Sblocco" aria-label="PIN">🔒</button>
-    <a href="checklist.html" class="btn big">Vai alla checklist →</a>
-  </nav>
+  <button id="btn-open-menu" class="btn" style="background:#fff; color:#0d63d6; border-radius:20px; font-weight:800; padding:8px 16px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">⚙️ MENU</button>
 </header>
 
 <main class="container">
-      <section class="card hero-split" id="dashboard-section" hidden>
-      <div class="hero-left">
-        <img src="assets/5s-hero.png" alt="Grafica 5S" class="floating-img" />
-      </div>
-      <div class="hero-right">
-        <h2 class="hero-title">Cosa è 5S</h2>
-        <div class="stack-item slide-in" style="--delay: 0.1s;">
-          <span class="tag s1">1S Selezionare</span>
-          <span class="desc">Elimina il superfluo.</span>
-        </div>
-        <div class="stack-item slide-in" style="--delay: 0.2s;">
-          <span class="tag s2">2S Sistemare</span>
-          <span class="desc">Un posto per tutto.</span>
-        </div>
-        <div class="stack-item slide-in" style="--delay: 0.3s;">
-          <span class="tag s3">3S Splendere</span>
-          <span class="desc">Pulisci e previeni.</span>
-        </div>
-        <div class="stack-item slide-in" style="--delay: 0.4s;">
-          <span class="tag s4">4S Standardizzare</span>
-          <span class="desc">Regole visive.</span>
-        </div>
-        <div class="stack-item slide-in" style="--delay: 0.5s;">
-          <span class="tag s5">5S Sostenere</span>
-          <span class="desc">Miglioramento continuo.</span>
-        </div>
-      </div>
-    </section>
+  <section class="card split align-center">
+    <div class="col">
+      <h2 style="margin-top:0;">Cosa è 5S</h2>
+      <ol class="what5s">
+        <li><span class="pill s1">1S Selezionare</span> — Eliminare il superfluo.</li>
+        <li><span class="pill s2">2S Sistemare</span> — Un posto per tutto e tutto al suo posto.</li>
+        <li><span class="pill s3">3S Splendere</span> — Pulire e prevenire lo sporco.</li>
+        <li><span class="pill s4">4S Standardizzare</span> — Regole e segnali chiari.</li>
+        <li><span class="pill s5">5S Sostenere</span> — Abitudine e miglioramento continuo.</li>
+      </ol>
+    </div>
+    <div class="col img-col">
+      <img src="assets/5S.png" alt="Schema 5S" class="hero5s">
+    </div>
+  </section>
 
   <section class="card">
     <div class="card-head">
@@ -67,43 +45,39 @@
         <button class="seg" data-type="MONTAGGIO">Montaggio</button>
       </div>
     </div>
-
-    <section class="card" id="delay-section" hidden>
-      <h3>⚠️ CH in ritardo</h3>
-      <p class="muted small">I seguenti canali non sono stati aggiornati da più di 7 giorni:</p>
-      <ul id="delay-list" class="delay-list"></ul>
-    </section>
-     
     <div class="hscroll">
       <div id="board-all" class="board-all"></div>
     </div>
-
-    <div class="legend5s">
-      <span class="dot s1">1S</span>
-      <span class="dot s2">2S</span>
-      <span class="dot s3">3S</span>
-      <span class="dot s4">4S</span>
-      <span class="dot s5">5S</span>
-    </div>
-
-    <div id="chip-strip" class="chips"></div>
   </section>
 </main>
 
 <footer class="safe-bottom">
-  <button id="btn-import" class="btn huge primary" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 1.1rem;">
-    <span>📥</span> Importa Dati Operatori
-  </button>
-  <input id="import-input" type="file" accept="application/json,.json" multiple hidden>
-  
-  <div class="version">v2.6.0 • PWA ready</div>
+  <button id="btn-export-supervisor" class="btn huge outline">Esporta dati per Supervisore (PIN)</button>
+  <div class="version">v3.1 • PWA Menu Edition</div>
 </footer>
+
+<dialog id="actionMenu" class="action-sheet">
+  <div class="sheet-box">
+    <div class="sheet-header">
+      <h3 style="margin:0; font-size:1.3rem; color:#0f172a;">🛠️ Strumenti Home</h3>
+      <button id="btn-close-menu" class="btn icon ghost" style="background:#e2e8f0; color:#475569; border-radius:50%;">✖</button>
+    </div>
+    <div class="sheet-grid">
+      <a href="alerts.html" class="sheet-btn" style="color: #ef4444; background: #fef2f2; border-color: #fecaca; text-decoration:none;">🚨 Allerte Sotto 100%</a>
+      <button id="btn-notes" class="sheet-btn" onclick="location.href='notes.html'">📝 Vedi tutte le Note</button>
+      <button id="btn-import" class="sheet-btn">📥 Importa Dati da Operatori</button>
+      <button id="btn-export" class="sheet-btn">📤 Backup: Esporta dati (PIN)</button>
+      <button id="btn-lock" class="sheet-btn" style="color:#ef4444;">🔒 Blocca / Sblocca App</button>
+      <a href="checklist.html" class="sheet-btn primary" style="text-decoration:none; margin-top:10px;">📋 Vai alla Checklist Completa →</a>
+    </div>
+  </div>
+</dialog>
 
 <dialog id="pinDialog" class="modal">
   <div class="modal-box">
-    <h4>🔒 Area Riservata</h4>
+    <h4 style="margin-top:0; color:#0d63d6;">🔒 Area Riservata</h4>
     <p class="muted" style="font-size: 0.9rem; margin-top: 0; margin-bottom: 16px;">
-      Inserisci il PIN Supervisore per sbloccare l'esportazione dei dati.
+      Inserisci il PIN Supervisore per procedere.
     </p>
     <div class="field">
       <span>PIN (Default: 6170)</span>
