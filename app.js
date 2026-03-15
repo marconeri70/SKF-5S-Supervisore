@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v3.3 (Percentuali + Grafici Cliccabili)
+// SKF 5S — Supervisor v3.4 (Color Sync)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -91,12 +91,12 @@ function renderHome(){
       <h5>${ch} <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:0.75rem; background:#eef5ff; color:#0b3b8f; padding:2px 6px; border-radius:6px; font-weight:700;">Media ${meanPct(p)}%</span><span class="area">${area.toUpperCase()}</span></div></h5>
       
       <div class="mini-bars" style="cursor:pointer;" onclick="location.href='checklist.html?hlCh=${encodeURIComponent(ch)}'" title="Clicca per espandere il canale">
-        <div class="mini-bar" style="--h:${toPct(p.s1)}%;--c:#e11d48" data-val="${toPct(p.s1)}%"></div>
-        <div class="mini-bar" style="--h:${toPct(p.s2)}%;--c:#f59e0b" data-val="${toPct(p.s2)}%"></div>
-        <div class="mini-bar" style="--h:${toPct(p.s3)}%;--c:#10b981" data-val="${toPct(p.s3)}%"></div>
-        <div class="mini-bar" style="--h:${toPct(p.s4)}%;--c:#0ea5e9" data-val="${toPct(p.s4)}%"></div>
-        <div class="mini-bar" style="--h:${toPct(p.s5)}%;--c:#6366f1" data-val="${toPct(p.s5)}%"></div>
-        <div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#ef4444;background:#fee2e2" data-val="${delayedS.length > 0 ? delayedS.length : ''}"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s1)}%;--c:#7c3aed" data-val="${toPct(p.s1)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s2)}%;--c:#ef4444" data-val="${toPct(p.s2)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s3)}%;--c:#f59e0b" data-val="${toPct(p.s3)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s4)}%;--c:#10b981" data-val="${toPct(p.s4)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s5)}%;--c:#2563eb" data-val="${toPct(p.s5)}%"></div>
+        <div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#475569;background:#e2e8f0" data-val="${delayedS.length > 0 ? delayedS.length : ''}"></div>
       </div>
       
       <div class="mini-scale"><span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span><span>Ritardi</span></div>
@@ -189,12 +189,12 @@ function renderChecklist(){
       </div>
       
       <div class="mini-bars sheet-graph">
-        <div class="mini-bar" style="--h:${toPct(p.s1)}%;--c:#e11d48" data-val="${toPct(p.s1)}%"></div>
-        <div class="mini-bar" style="--h:${toPct(p.s2)}%;--c:#f59e0b" data-val="${toPct(p.s2)}%"></div>
-        <div class="mini-bar" style="--h:${toPct(p.s3)}%;--c:#10b981" data-val="${toPct(p.s3)}%"></div>
-        <div class="mini-bar" style="--h:${toPct(p.s4)}%;--c:#0ea5e9" data-val="${toPct(p.s4)}%"></div>
-        <div class="mini-bar" style="--h:${toPct(p.s5)}%;--c:#6366f1" data-val="${toPct(p.s5)}%"></div>
-        <div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#ef4444;background:#fee2e2" data-val="${delayedS.length > 0 ? delayedS.length : ''}"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s1)}%;--c:#7c3aed" data-val="${toPct(p.s1)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s2)}%;--c:#ef4444" data-val="${toPct(p.s2)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s3)}%;--c:#f59e0b" data-val="${toPct(p.s3)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s4)}%;--c:#10b981" data-val="${toPct(p.s4)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s5)}%;--c:#2563eb" data-val="${toPct(p.s5)}%"></div>
+        <div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#475569;background:#e2e8f0" data-val="${delayedS.length > 0 ? delayedS.length : ''}"></div>
       </div>
       
       <div class="mini-scale"><span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span><span>Ritardi</span></div>
@@ -232,18 +232,11 @@ function renderChecklist(){
     setTimeout(() => {
       const el = document.getElementById(cleanId);
       if (el) {
-        // Espande automaticamente la scheda del Canale
         el.classList.remove('compact');
         const notesDiv = el.querySelector('.ch-detailed-notes');
         if (notesDiv) notesDiv.style.display = 'block';
-        
-        // Lo illumina per un secondo
         el.classList.add('flash-target');
-        
-        // Ci scorre sopra
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Rimuove l'illuminazione dopo 2 secondi
         setTimeout(() => el.classList.remove('flash-target'), 2000);
       }
     }, 300);
