@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v3.2 (Super Fix Edtion)
+// SKF 5S — Supervisor v3.3 (Percentuali + Grafici Cliccabili)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -89,12 +89,19 @@ function renderHome(){
     card.className = 'mini-card';
     card.innerHTML = `
       <h5>${ch} <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:0.75rem; background:#eef5ff; color:#0b3b8f; padding:2px 6px; border-radius:6px; font-weight:700;">Media ${meanPct(p)}%</span><span class="area">${area.toUpperCase()}</span></div></h5>
-      <div class="mini-bars">
-        <div class="mini-bar" style="--h:${toPct(p.s1)}%;--c:#e11d48"></div><div class="mini-bar" style="--h:${toPct(p.s2)}%;--c:#f59e0b"></div><div class="mini-bar" style="--h:${toPct(p.s3)}%;--c:#10b981"></div><div class="mini-bar" style="--h:${toPct(p.s4)}%;--c:#0ea5e9"></div><div class="mini-bar" style="--h:${toPct(p.s5)}%;--c:#6366f1"></div><div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#ef4444;background:#fee2e2"></div>
+      
+      <div class="mini-bars" style="cursor:pointer;" onclick="location.href='checklist.html?hlCh=${encodeURIComponent(ch)}'" title="Clicca per espandere il canale">
+        <div class="mini-bar" style="--h:${toPct(p.s1)}%;--c:#e11d48" data-val="${toPct(p.s1)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s2)}%;--c:#f59e0b" data-val="${toPct(p.s2)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s3)}%;--c:#10b981" data-val="${toPct(p.s3)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s4)}%;--c:#0ea5e9" data-val="${toPct(p.s4)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s5)}%;--c:#6366f1" data-val="${toPct(p.s5)}%"></div>
+        <div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#ef4444;background:#fee2e2" data-val="${delayedS.length > 0 ? delayedS.length : ''}"></div>
       </div>
+      
       <div class="mini-scale"><span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span><span>Ritardi</span></div>
       <div style="text-align:center">${delayBtn}</div>
-      <a href="checklist.html#${encodeURIComponent(ch)}" class="open-link">Apri scheda</a>
+      <a href="checklist.html?hlCh=${encodeURIComponent(ch)}" class="open-link">Apri Dettaglio Scheda</a>
     `;
     wrap.appendChild(card);
   }
@@ -162,8 +169,8 @@ function renderChecklist(){
     }
 
     const card = document.createElement('section');
-    card.className = 'card-line';
-    card.id = `CH-${ch}`;
+    card.className = 'card-line compact'; // Di base le teniamo chiuse
+    card.id = `CH-${ch.replace(/\s+/g, '-')}`;
 
     card.innerHTML = `
       <div class="top">
@@ -180,9 +187,16 @@ function renderChecklist(){
           <button class="btn outline btn-toggle">Mostra Note</button>
         </div>
       </div>
+      
       <div class="mini-bars sheet-graph">
-        <div class="mini-bar" style="--h:${toPct(p.s1)}%;--c:#e11d48"></div><div class="mini-bar" style="--h:${toPct(p.s2)}%;--c:#f59e0b"></div><div class="mini-bar" style="--h:${toPct(p.s3)}%;--c:#10b981"></div><div class="mini-bar" style="--h:${toPct(p.s4)}%;--c:#0ea5e9"></div><div class="mini-bar" style="--h:${toPct(p.s5)}%;--c:#6366f1"></div><div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#ef4444;background:#fee2e2"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s1)}%;--c:#e11d48" data-val="${toPct(p.s1)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s2)}%;--c:#f59e0b" data-val="${toPct(p.s2)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s3)}%;--c:#10b981" data-val="${toPct(p.s3)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s4)}%;--c:#0ea5e9" data-val="${toPct(p.s4)}%"></div>
+        <div class="mini-bar" style="--h:${toPct(p.s5)}%;--c:#6366f1" data-val="${toPct(p.s5)}%"></div>
+        <div class="mini-bar delay-bar" style="--h:${delayPct}%;--c:#ef4444;background:#fee2e2" data-val="${delayedS.length > 0 ? delayedS.length : ''}"></div>
       </div>
+      
       <div class="mini-scale"><span>1S</span><span>2S</span><span>3S</span><span>4S</span><span>5S</span><span>Ritardi</span></div>
       ${delayBtn}
       <div class="ch-detailed-notes" style="display: none; margin-top: 24px; border-top: 2px dashed #cbd5e1; padding-top: 16px;">
@@ -210,10 +224,34 @@ function renderChecklist(){
       };
     }
   }
+
+  // LOGICA DI AUTOSCROLL SE SI CLICCA DALLA HOME
+  const hlChRaw = new URL(location.href).searchParams.get('hlCh');
+  if (hlChRaw){
+    const cleanId = `CH-${hlChRaw.replace(/\s+/g, '-')}`;
+    setTimeout(() => {
+      const el = document.getElementById(cleanId);
+      if (el) {
+        // Espande automaticamente la scheda del Canale
+        el.classList.remove('compact');
+        const notesDiv = el.querySelector('.ch-detailed-notes');
+        if (notesDiv) notesDiv.style.display = 'block';
+        
+        // Lo illumina per un secondo
+        el.classList.add('flash-target');
+        
+        // Ci scorre sopra
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Rimuove l'illuminazione dopo 2 secondi
+        setTimeout(() => el.classList.remove('flash-target'), 2000);
+      }
+    }, 300);
+  }
 }
 
 // ===============================
-// PANNELLO ALLERTE (Risolto link e stampa)
+// PANNELLO ALLERTE
 // ===============================
 function renderAlerts() {
   const list = $('#alerts-list');
@@ -221,7 +259,7 @@ function renderAlerts() {
   const fType = $('#f-type');
   const fCh = $('#f-ch');
   const btnApply = $('#f-apply');
-  const btnPrintAll = $('#btn-print-alerts-all'); // Tasto Stampa Totale
+  const btnPrintAll = $('#btn-print-alerts-all'); 
   if (!list) return;
 
   function updateAlerts() {
@@ -281,7 +319,6 @@ function renderAlerts() {
       `;
       list.appendChild(div);
 
-      // Logica Stampa Singola per pagina Allerte
       const btnPrint = div.querySelector('.btn-print-alert');
       if (btnPrint) {
         btnPrint.onclick = () => {
@@ -297,7 +334,6 @@ function renderAlerts() {
   
   if (btnApply) btnApply.onclick = updateAlerts;
   
-  // Logica Stampa Totale Allerte
   if (btnPrintAll) {
     btnPrintAll.onclick = () => {
       document.body.dataset.printMode = 'all';
@@ -308,7 +344,7 @@ function renderAlerts() {
 }
 
 // ===============================
-// PANNELLO NOTE (Risolto Autoscroll e Titoli S)
+// PANNELLO NOTE
 // ===============================
 function renderNotes() {
   const list = $('#notes-list');
@@ -361,11 +397,8 @@ function renderNotes() {
             const pScore = r.points && r.points[k] !== undefined ? Number(r.points[k]) : 5;
             const sDate = r.dates && r.dates[k] ? new Date(r.dates[k]) : null;
             const isAlert = (sDate && ((new Date() - sDate) > 7 * 24 * 60 * 60 * 1000)) || pScore < 5;
-            
-            // Fix logica di apertura: estrae il numero dalla S (es: "s1" diventa "1")
             const isOpen = isAlert || (isTargetCard && openSArr.includes(k.replace('s', '')));
             
-            // Fix colori e titoli esatti
             const sColor = `var(--${k.toLowerCase()}, #0d63d6)`;
             const titleS = S_TITLES[k] || k.toUpperCase();
 
@@ -400,7 +433,6 @@ function renderNotes() {
 
     if(counter) counter.textContent = `(${withNotes.length})`;
 
-    // MAGIC FIX: Scroll automatico e lampeggio quando vieni da un'altra pagina!
     setTimeout(() => {
       const target = document.getElementById('target-note-card');
       if (target) {
@@ -416,7 +448,7 @@ function renderNotes() {
 }
 
 // ===============================
-// IMPORTAZIONE JSON E MENU AZIONI
+// MENU AZIONI E IMPORTAZIONE
 // ===============================
 function setupActionMenu() {
   const menu = document.getElementById('actionMenu');
@@ -465,17 +497,15 @@ function setupActionMenu() {
     };
   }
 
-  // 📊 GENERATORE SLIDE PRESENTAZIONE (FIX per Mobile Android)
   const presBtn = document.getElementById('btn-presentation');
   if (presBtn) {
     presBtn.onclick = () => {
       if(menu) menu.close();
-      alert("💡 CONSIGLIO: Se usi il tablet Android, ricordati di impostare l'orientamento su 'ORIZZONTALE' nelle opzioni di stampa per una presentazione perfetta!");
+      alert("💡 CONSIGLIO: Se usi il tablet Android, ricordati di impostare l'orientamento su 'ORIZZONTALE' nelle opzioni di stampa!");
       
       document.body.dataset.printMode = 'all'; 
       const slideStyle = document.createElement('style');
       slideStyle.id = 'slide-style-temp';
-      // CSS potenziato per forzare l'aspetto "Slide" anche se il tablet prova a stampare in verticale
       slideStyle.innerHTML = `
         @media print {
           @page { size: landscape; margin: 10mm; }
