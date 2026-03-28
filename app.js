@@ -1,5 +1,5 @@
 // ===============================
-// SKF 5S — Supervisor v3.4 (Color Sync)
+// SKF 5S — Supervisor v3.5 (Sync Ritardi 7 Giorni)
 // ===============================
 
 const $  = sel => document.querySelector(sel);
@@ -26,6 +26,20 @@ const S_TITLES = {
   s4: "4S - Standardizzare (Regole visive)",
   s5: "5S - Sostenere (Abitudine e miglioramento)"
 };
+
+// ===============================
+// 🚨 MOTORE RITARDI (Sincronizzato con Operatori)
+// ===============================
+function getDelayDays(dateString) {
+  if (!dateString) return 999; // Mai compilata
+  const today = new Date(); today.setHours(0,0,0,0);
+  const chosen = new Date(dateString); chosen.setHours(0,0,0,0);
+  return Math.floor((today - chosen) / (1000 * 60 * 60 * 24));
+}
+
+function isLate(dateString) {
+  return getDelayDays(dateString) >= 7;
+}
 
 function getGroupedAndSortedData(dataFilter) {
   const byCh = new Map();
@@ -75,11 +89,8 @@ function renderHome(){
 
     let delayedS = [];
     if (last.dates) {
-      const now = new Date();
       for (let i=1; i<=5; i++) {
-         if (last.dates[`s${i}`]) {
-            if (now - new Date(last.dates[`s${i}`]) > 7 * 24 * 60 * 60 * 1000) delayedS.push(i);
-         }
+         if (isLate(last.dates[`s${i}`])) delayedS.push(i);
       }
     }
     const delayPct = (delayedS.length / 5) * 100;
@@ -131,11 +142,8 @@ function renderChecklist(){
 
     let delayedS = [];
     if (last.dates) {
-      const now = new Date();
       for (let i=1; i<=5; i++) {
-         if (last.dates[`s${i}`]) {
-            if (now - new Date(last.dates[`s${i}`]) > 7 * 24 * 60 * 60 * 1000) delayedS.push(i);
-         }
+         if (isLate(last.dates[`s${i}`])) delayedS.push(i);
       }
     }
     const delayPct = (delayedS.length / 5) * 100;
@@ -148,12 +156,13 @@ function renderChecklist(){
         const v = last.notes[k];
         if (v && String(v).trim()) {
            const pScore = p[k] !== undefined ? Number(p[k]) : 5;
-           const sDate = last.dates && last.dates[k] ? new Date(last.dates[k]) : null;
-           const isDelayed = sDate && ((new Date() - sDate) > 7 * 24 * 60 * 60 * 1000);
+           const sDate = last.dates && last.dates[k] ? last.dates[k] : null;
+           const isDelayed = isLate(sDate);
+           const daysDelay = getDelayDays(sDate);
            const isAlert = isDelayed || pScore < 5;
            
            let alertBadge = '';
-           if(isDelayed) alertBadge += `<span style="background:#ef4444; color:#fff; padding:2px 8px; border-radius:12px; font-size:0.75rem; margin-left:8px; font-weight:bold;">⏱️ RITARDO</span>`;
+           if(isDelayed) alertBadge += `<span style="background:#ef4444; color:#fff; padding:2px 8px; border-radius:12px; font-size:0.75rem; margin-left:8px; font-weight:bold;">⏱️ RITARDO (${daysDelay===999 ? 'Mai compilata' : daysDelay + ' gg'})</span>`;
            if(pScore < 5) alertBadge += `<span style="background:#f59e0b; color:#fff; padding:2px 8px; border-radius:12px; font-size:0.75rem; margin-left:8px; font-weight:bold;">⚠️ Punteggio: ${pScore}/5</span>`;
 
            notesHtml += `
@@ -169,7 +178,7 @@ function renderChecklist(){
     }
 
     const card = document.createElement('section');
-    card.className = 'card-line compact'; // Di base le teniamo chiuse
+    card.className = 'card-line compact'; 
     card.id = `CH-${ch.replace(/\s+/g, '-')}`;
 
     card.innerHTML = `
@@ -273,13 +282,14 @@ function renderAlerts() {
 
       const p = last.points || {s1:5, s2:5, s3:5, s4:5, s5:5};
       let alertsForCh = [];
-      const now = new Date();
       
       for (let i=1; i<=5; i++) {
         const score = Number(p[`s${i}`] || 0);
-        const dateS = (last.dates && last.dates[`s${i}`]) ? new Date(last.dates[`s${i}`]) : null;
-        const isDelayed = dateS && ((now - dateS) > 7 * 24 * 60 * 60 * 1000);
-        if (score < 5 || isDelayed) alertsForCh.push({ s: i, score, isDelayed });
+        const dateString = last.dates && last.dates[`s${i}`];
+        const daysDelay = getDelayDays(dateString);
+        const isDelayed = daysDelay >= 7;
+        
+        if (score < 5 || isDelayed) alertsForCh.push({ s: i, score, isDelayed, daysDelay });
       }
 
       if (alertsForCh.length > 0) alertCards.push({ ch, area, alerts: alertsForCh, raw: last });
@@ -289,7 +299,7 @@ function renderAlerts() {
     alertCards.forEach(card => {
       const openSParams = card.alerts.map(a => a.s).join(',');
       const sBadges = card.alerts.map(a => {
-        let msg = a.isDelayed ? `⏱️ Ritardo S${a.s}` : `📉 S${a.s} (${a.score}/5)`;
+        let msg = a.isDelayed ? `⏱️ Ritardo S${a.s} (${a.daysDelay===999 ? 'Mai' : a.daysDelay+' gg'})` : `📉 S${a.s} (${a.score}/5)`;
         return `<span style="display:inline-block; background:#fee2e2; color:#b91c1c; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold; margin: 4px 4px 0 0; border:1px solid #f87171;">${msg}</span>`;
       }).join('');
 
@@ -337,7 +347,7 @@ function renderAlerts() {
 }
 
 // ===============================
-// PANNELLO NOTE
+// PANNELLO NOTE E STORICO
 // ===============================
 function renderNotes() {
   const list = $('#notes-list');
@@ -388,8 +398,10 @@ function renderNotes() {
         for (const [k, v] of Object.entries(r.notes)) {
           if (v && String(v).trim()) {
             const pScore = r.points && r.points[k] !== undefined ? Number(r.points[k]) : 5;
-            const sDate = r.dates && r.dates[k] ? new Date(r.dates[k]) : null;
-            const isAlert = (sDate && ((new Date() - sDate) > 7 * 24 * 60 * 60 * 1000)) || pScore < 5;
+            const dateString = r.dates && r.dates[k];
+            const daysDelay = getDelayDays(dateString);
+            const isDelayed = daysDelay >= 7;
+            const isAlert = isDelayed || pScore < 5;
             const isOpen = isAlert || (isTargetCard && openSArr.includes(k.replace('s', '')));
             
             const sColor = `var(--${k.toLowerCase()}, #0d63d6)`;
@@ -398,7 +410,7 @@ function renderNotes() {
             notesHtml += `
               <details class="${isAlert ? 'alert-box' : ''}" style="margin-bottom: 8px;" ${isOpen ? 'open' : ''}>
                 <summary style="color: ${sColor}; font-weight: bold; cursor: pointer; padding: 12px; background: #fff; border-radius: 6px; border: 1px solid #dfe6f4; user-select: none;">
-                  ▶ ${titleS} ${isAlert ? ' — ⚠️ DA VERIFICARE' : ''}
+                  ▶ ${titleS} ${isDelayed ? ` — ⚠️ RITARDO (${daysDelay===999 ? 'Mai' : daysDelay+' gg'})` : (isAlert ? ' — ⚠️ DA VERIFICARE' : '')}
                 </summary>
                 <div style="max-height: 350px; overflow-y: auto; padding: 14px; background: #fff; border: 1px solid #dfe6f4; border-top: none; border-radius: 0 0 6px 6px; line-height: 1.6; color: #334155;">
                   ${formatNoteText(v)}
