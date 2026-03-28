@@ -1,3 +1,3 @@
-// v2.3.8 — SW minimale: usa sempre i file più recenti
+// v3.5.0 — SW minimale: Sync Ritardi 7 Giorni
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => self.clients.claim());
